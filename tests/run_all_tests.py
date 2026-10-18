@@ -19,7 +19,8 @@ def main():
         os.path.join('tests', 'test_chain_roller_clearance.py'),
         os.path.join('tests', 'test_dxf_syntax_and_layers.py'),
         os.path.join('tests', 'audit_and_crosscheck_all_data.py'),
-        os.path.join('tests', 'test_chrome_catalogs.py')
+        os.path.join('tests', 'test_chrome_catalogs.py'),
+        os.path.join('tests', 'verify_all_standards_gap.py')
     ]
 
     all_passed = True

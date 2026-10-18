@@ -5877,7 +5877,8 @@
 
     // 2. CHẾ ĐỘ 2: CHI TIẾT HỐC RĂNG CHUẨN XÁC HOÀN CHỈNH (THEO CHUẨN KETTENWULF KWN 017 TRANG 48)
     function renderGapView(g, showDims, showSim) {
-      const { Rf, Ra, R0, Rs, r4, u, r1, h3, r2, beta_deg, gamma_deg, alpha_rad, alpha_deg, d1, p, standard, X_deg } = CurrentGeom;
+      const { Rf, Ra, R0, Rs, r4, u, r1, h3, r2, beta_deg, gamma_deg, half_beta, alpha_rad, alpha_deg, d1, p, standard, X_deg } = CurrentGeom;
+      const half_alpha = alpha_rad / 2.0;
 
       // Tỷ lệ kích thước và chữ kỹ thuật co giãn tỷ lệ chuẩn theo bước xích và hốc răng
       const S_gap = Math.max(p, d1 * 2.2);
@@ -6109,9 +6110,7 @@
           dimsHtml += `<text x="0" y="${(y_c1 - R_arc_X - textSz * 0.45).toFixed(2)}" fill="#0284c7" font-size="${textSz}" font-weight="700" text-anchor="middle">X = ${X_val.toFixed(1)}°</text>`;
         } else {
           // KWN 017 & KWN 015: Góc mở rãnh β
-          const half_beta = CurrentGeom.half_beta;
-          const half_alpha = alpha_rad / 2.0;
-          const gamma_rad = (CurrentGeom.gamma_deg * Math.PI) / 180.0;
+          const gamma_rad = (gamma_deg * Math.PI) / 180.0;
 
           const Y_v = P1.y - P1.x / Math.tan(half_beta);
           const V_svg = { x: 0.0, y: -Y_v };
