@@ -133,6 +133,33 @@ window.runCatalogTests = async function() {
         if (chkProt) chkProt.checked = false;
         onProtectionPitchToggle();
 
+        // 6b. Verify Different Pitches (KettenWulf Page 50)
+        const chkDiff = document.getElementById('chkDifferentPitch');
+        const numZ = document.getElementById('num_z');
+        if (numZ) numZ.value = '6';
+        AppState.z = 6;
+        AppState.diff_p1 = 80;
+        AppState.diff_p2 = 120;
+        const inpP1 = document.getElementById('input_diff_p1');
+        const inpP2 = document.getElementById('input_diff_p2');
+        if (inpP1) inpP1.value = '80';
+        if (inpP2) inpP2.value = '120';
+
+        if (chkDiff) chkDiff.checked = true;
+        onDifferentPitchToggle();
+
+        const d0_diff = AppState.d0 || (CurrentGeom && CurrentGeom.d0);
+        window.__test_results.different_pitch = {
+            z: AppState.z,
+            p1: AppState.diff_p1,
+            p2: AppState.diff_p2,
+            d0: d0_diff
+        };
+
+        // Turn off different pitch
+        if (chkDiff) chkDiff.checked = false;
+        onDifferentPitchToggle();
+
         // 7. Verify Hub Catalog Selector (KettenWulf vs ScanChain)
         const selHubCat = document.getElementById('selHubCatalog');
         selSeries.value = 'FV';
@@ -262,6 +289,12 @@ window.addEventListener('DOMContentLoaded', () => {
     assert prot.get('d0_prot') is not None, "Protection pitch calculation failed!"
     print(f"Protection pitch d0: std={prot['d0_std']:.2f}mm, prot={prot['d0_prot']:.2f}mm")
     
+    # Check different pitch math (KettenWulf Page 50 example: z=6, p1=80, p2=120 -> d0=386.92mm)
+    diff = results.get('different_pitch', {})
+    assert diff.get('d0') is not None, "Different pitch calculation failed!"
+    print(f"Different pitch (Page 50): z={diff['z']}, p1={diff['p1']}mm, p2={diff['p2']}mm -> d0={diff['d0']:.2f}mm")
+    assert abs(diff['d0'] - 386.92) < 0.1, f"Different pitch d0 expected 386.92mm, got {diff['d0']:.2f}mm"
+
     # Check hub catalogs
     hubs = results.get('hub_catalogs', {})
     assert hubs.get('kw') is not None and hubs.get('sc') is not None, "Hub catalog switching failed!"
