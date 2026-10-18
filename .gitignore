@@ -13,6 +13,13 @@ backup/
 *.txt
 *.log
 
+# App Icons & Assets
+!favicon.svg
+!apple-touch-icon.png
+!apple-touch-icon.svg
+!assets/
+!assets/**
+
 # Keep clean DXF samples if needed
 !clean_combined.dxf
 
@@ -28,3 +35,5 @@ debug_*.json
 .idea/
 .DS_Store
 Thumbs.db
+__pycache__/
+
