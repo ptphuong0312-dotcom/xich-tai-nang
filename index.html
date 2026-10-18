@@ -840,7 +840,8 @@
                 </select>
               </div>
               <div id="protPitchInfo" style="font-size: 9.5px; color: #a7f3d0; margin-top: 4px; background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px; line-height: 1.4;">
-                Vòng chia: <strong>d₀ = p / sin(180°/z₀)</strong> | Ăn khớp luân phiên qua từng vòng
+                Vòng chia: <strong>d₀ = p / sin(180°/z₀)</strong> | Ăn khớp luân phiên qua từng vòng<br>
+                <span style="color:#6ee7b7;">🛡️ Răng trung gian nằm lọt an toàn trong khoảng hở lòng xích (b₁ &gt; B₁ ≈ 0.9 b₁), không cấn chạm má xích.</span>
               </div>
             </div>
           </div>
@@ -865,6 +866,9 @@
                   <input type="number" id="input_diff_p2" value="120" step="1" min="10" max="1000" oninput="onDifferentPitchParamChange()" style="width: 100%; padding: 3px 6px; font-size: 11px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color);">
                 </div>
               </div>
+              <button type="button" onclick="loadKettenwulfP50Preset()" style="width: 100%; margin-top: 5px; padding: 4px 8px; font-size: 10px; font-weight: 600; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                <span>⚡ Nạp mẫu chuẩn Trang 50 (z=6, p₁=80, p₂=120, d₁=25, g=35)</span>
+              </button>
               <div id="diffPitchFactors" style="font-size: 9.5px; color: #94a3b8; margin-top: 4px; background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px; line-height: 1.4;">
                 Hệ số z=6: n = 2.00000 | f = 0.26794
               </div>
@@ -3614,10 +3618,7 @@
         ANSI: CHAIN_CATALOGS.ANSI
       },
       KWN_016: {
-        LANTERN: CHAIN_CATALOGS.LANTERN,
-        MT: CHAIN_CATALOGS.MT,
-        M: CHAIN_CATALOGS.M,
-        DIN8175: CHAIN_CATALOGS.DIN8175
+        LANTERN: CHAIN_CATALOGS.LANTERN
       }
     };
 
@@ -3847,8 +3848,19 @@
         selPitch.value = pref;
       }
 
+      // Đồng bộ thanh trượt bước xích (p) theo đúng bước xích của mẫu
+      const inp_p = document.getElementById('input_p');
+      const num_p = document.getElementById('num_p');
+      if (inp_p) {
+        inp_p.min = Math.min(10, ...pitches);
+        inp_p.max = Math.max(600, ...pitches);
+        inp_p.value = AppState.p;
+      }
+      if (num_p) {
+        num_p.value = (AppState.p % 1 === 0 ? AppState.p.toFixed(0) : AppState.p.toFixed(2));
+      }
+
       applyModelParams(model);
-      autoApplyStandardHubDimensions();
     }
 
     function applyModelParams(model) {
@@ -3904,9 +3916,15 @@
       }
       AppState.dw = target_dw;
 
+      // TỰ ĐỘNG THIẾT KẾ MAY-Ơ PHÙ HỢP VỚI XÍCH (ĐẶT LẠI CHẾ ĐỘ TỰ ĐỘNG CHO MẪU XÍCH MỚI)
+      AppState.isUserCustomHub = false;
+      const inpDw = document.getElementById('input_dw');
+      if (inpDw) inpDw.value = AppState.dw;
+      autoLookupDIN6885(AppState.dw);
+      autoApplyStandardHubDimensions(true);
+
       syncUIFromState();
       updateChainSpecCard(model, AppState.p);
-      autoLookupDIN6885(AppState.dw);
       onParamChange();
       recalculateLoad();
     }
@@ -3926,13 +3944,13 @@
         if (tab1Badge) tab1Badge.innerText = 'KWN 017';
         if (tab1Desc) tab1Desc.innerText = 'Xích tải cào (ISO 1977 & DIN 8167/8165). Tự động tra góc mở rãnh β theo số răng z.';
         if (catBadge) catBadge.innerText = 'ISO 1977 / DIN 8167';
-        if (!['MT', 'FV', 'M', 'FVT', 'MC', 'SMS1698'].includes(AppState.currentSeries)) AppState.currentSeries = 'MT';
+        if (!['MT', 'FV', 'M', 'FVT', 'MC', 'FVC', 'DIN8175', 'SMS1698'].includes(AppState.currentSeries)) AppState.currentSeries = 'MT';
       } else if (AppState.standard === 'KWN_015') {
         if (badge) badge.innerText = 'KWN 015';
         if (tab1Badge) tab1Badge.innerText = 'KWN 015';
         if (tab1Desc) tab1Desc.innerText = 'Hốc răng sâu chống dồn kẹt / tải nặng. Cho phép tùy chỉnh góc sườn γ.';
         if (catBadge) catBadge.innerText = 'Hốc Sâu KWN 015';
-        if (!['MT', 'FV', 'M', 'FVT', 'MC', 'SMS1698'].includes(AppState.currentSeries)) AppState.currentSeries = 'MT';
+        if (!['MT', 'FV', 'M', 'FVT', 'MC', 'FVC', 'DIN8175', 'SMS1698'].includes(AppState.currentSeries)) AppState.currentSeries = 'MT';
       } else if (AppState.standard === 'KWN_001') {
         if (badge) badge.innerText = 'KWN 001 (ISO 606)';
         if (tab1Badge) tab1Badge.innerText = 'KWN 001 / Con lăn';
@@ -3944,7 +3962,7 @@
         if (tab1Badge) tab1Badge.innerText = 'KWN 016 / Lồng đèn';
         if (tab1Desc) tab1Desc.innerText = 'Đĩa chốt lồng đèn (Lantern Pinion). Modun m = p/π, khe hở chân răng S1 = 0.04m, bề rộng răng B1 = 3.3m.';
         if (catBadge) catBadge.innerText = 'KWN 016 / Triebstock';
-        if (!['LANTERN', 'MT', 'M'].includes(AppState.currentSeries)) AppState.currentSeries = 'LANTERN';
+        if (AppState.currentSeries !== 'LANTERN') AppState.currentSeries = 'LANTERN';
       }
 
       populateSeriesDropdown();
@@ -4701,13 +4719,18 @@
         // Áp dụng tỉ lệ cơ khí chuẩn KettenWulf (Catalog Trang 56)
         const dw = AppState.dw || 80.0;
         const ds_val = CurrentGeom && CurrentGeom.ds ? CurrentGeom.ds : (AppState.p * 2.0);
-        const Dn_std = Math.min(ds_val - 15.0, Math.max(dw + 30.0, Math.round(dw * 1.55)));
-        const NL_std = Math.max(Math.round(AppState.b1 * 1.5), Math.round(dw * 1.35));
+        const Dn_std = Math.min(ds_val - 15.0, Math.max(dw + 30.0, Math.round(dw * 1.55 / 5.0) * 5));
+        const NL_std = Math.max(Math.round(AppState.b1 * 1.5 / 5.0) * 5, Math.round(dw * 1.35 / 5.0) * 5);
         AppState.hub_Dn = Dn_std;
         AppState.hub_NL = NL_std;
         const inpNL = document.getElementById('input_hub_NL');
         if (inpNL) inpNL.value = NL_std;
       }
+      const inpDn = document.getElementById('input_hub_Dn');
+      if (inpDn) inpDn.value = AppState.hub_Dn;
+      const inpDw = document.getElementById('input_dw');
+      if (inpDw) inpDw.value = AppState.dw;
+      autoLookupDIN6885(AppState.dw);
       updateScanChainHubUI();
     }
 
@@ -5071,7 +5094,7 @@
     }
 
     function computeDifferentPitchContour(geom) {
-      const { z, d0, Ra, Rf, theta1, theta2, half_beta, u, r1, h3, p1 } = geom;
+      const { z, d0, Ra, Rf, Rs, theta1, theta2, half_beta, u, r1, h3, p1 } = geom;
       const half_alpha1 = theta1 / 2.0;
 
       // Tính nửa hốc răng cho bước p1 (tâm răng nằm tại theta1 / 2):
@@ -5152,7 +5175,7 @@
         const ang_start = phi_k + tip_angle;
         const ang_end = phi_k + theta1 - tip_angle;
         if (ang_end > ang_start + 1e-4) {
-          const steps = Math.max(12, Math.ceil((ang_end - ang_start) * (180 / Math.PI) * 2));
+          const steps = Math.max(10, Math.ceil((ang_end - ang_start) * (180 / Math.PI) * 2));
           for (let i = 1; i < steps; i++) {
             const cur = ang_start + (ang_end - ang_start) * (i / steps);
             full_pts.push({ x: Ra * Math.sin(cur), y: Ra * Math.cos(cur) });
@@ -5165,11 +5188,29 @@
           full_pts.push(rot_xy(p, phi_p2));
         }
 
-        // 4. Đoạn lượn má xích hạ thấp Rf qua bước lớn p2 (từ phi_k + theta1 đến phi_k + theta1 + theta2):
-        const n_rel = 16;
-        for (let i = 1; i < n_rel; i++) {
-          const ang_rel = phi_p2 + theta2 * (i / n_rel);
-          full_pts.push({ x: Rf * Math.sin(ang_rel), y: Rf * Math.cos(ang_rel) });
+        // 4. Đoạn lượn má xích hạ thấp Rs qua bước lớn p2 (KettenWulf Trang 50) tránh cấn má xích:
+        const ang_rel_start = phi_p2 + theta2 * 0.18;
+        const ang_rel_end = phi_p2 + theta2 * 0.82;
+        const n_t = 8;
+        for (let i = 1; i < n_t; i++) {
+          const t = i / n_t;
+          const r = Rf - (Rf - Rs) * (3 * t * t - 2 * t * t * t);
+          const ang = phi_p2 + (ang_rel_start - phi_p2) * t;
+          full_pts.push({ x: r * Math.sin(ang), y: r * Math.cos(ang) });
+        }
+
+        const n_rs = 14;
+        for (let i = 0; i <= n_rs; i++) {
+          const ang = ang_rel_start + (ang_rel_end - ang_rel_start) * (i / n_rs);
+          full_pts.push({ x: Rs * Math.sin(ang), y: Rs * Math.cos(ang) });
+        }
+
+        const ang_next = phi_k + theta1 + theta2;
+        for (let i = 1; i < n_t; i++) {
+          const t = i / n_t;
+          const r = Rs + (Rf - Rs) * (3 * t * t - 2 * t * t * t);
+          const ang = ang_rel_end + (ang_next - ang_rel_end) * t;
+          full_pts.push({ x: r * Math.sin(ang), y: r * Math.cos(ang) });
         }
       }
       return full_pts;
@@ -5724,7 +5765,8 @@
         return d;
       } else {
         // 3. Dòng xích má phẳng tiêu chuẩn KettenWulf M / FV (Standard Flat Link Plate)
-        const h = (AppState.g > 0) ? AppState.g : ((g2 > 0) ? g2 : (g1 > 0 ? g1 : 25.0));
+        const h_raw = (AppState.g > 0) ? AppState.g : ((g2 > 0) ? g2 : (g1 > 0 ? g1 : 25.0));
+        const h = Math.min(h_raw, L * 0.75);
         const r_end = h / 2.0;
         const num_arc = 8;
         const pts = [];
@@ -6079,50 +6121,51 @@
         dimsHtml += cadLeaderDim(r1_touch.x, r1_touch.y, -25, S_gap * 0.18, textSz * 5.2, `r1 = R${r1.toFixed(2)} mm`, '#dc2626', arrowSz, textSz);
 
         // F. [MÀU CAM #ea580c] GÓC SƯỜN γ THEO CHUẨN CATALOG KETTENWULF (TRANG 47 & 48)
-        // γ là góc hợp bởi đường sườn răng h3 (góc half_beta) và trục tâm răng (góc half_alpha).
-        // Biểu diễn gọn gàng ngay tại đỉnh sườn răng P2 với các đường dóng ngắn, sát thân đĩa xích:
+        // γ là góc hợp bởi đường thẳng kéo dài từ sườn h3 (góc half_beta) và đường thẳng tâm răng (màu xanh nét gạch qua tâm răng).
         if (standard !== 'KWN_001') {
           const gamma_val = CurrentGeom.gamma_deg;
+          const gamma_rad = (gamma_val * Math.PI) / 180.0;
 
-          // 1. Trục tâm răng chỉ kéo dài qua đỉnh răng một đoạn ngắn gọn:
+          // 1. Điểm giao ảo Apex I giữa đường kéo dài sườn h3 và trục tâm răng qua tâm O:
+          let s_flank = (P2.y * Math.sin(half_alpha) - P2.x * Math.cos(half_alpha)) / Math.sin(gamma_rad);
+          let t_center = (P2.x + s_flank * Math.sin(half_beta)) / Math.sin(half_alpha);
+          const I_apex = { x: t_center * Math.sin(half_alpha), y: -t_center * Math.cos(half_alpha) };
+
+          // 2. Bán kính đặt cung đo góc γ ngay sát vành ngoài đỉnh răng (gọn gàng, không kéo dài):
+          const R_dim = Ra + S_gap * 0.08;
+          const L_arc = Math.abs(t_center - R_dim);
+
+          // Điểm trên trục tâm răng (màu xanh):
+          const pt_tc = { x: R_dim * Math.sin(half_alpha), y: -R_dim * Math.cos(half_alpha) };
+          // Điểm trên đường kéo dài sườn răng (màu cam):
+          const pt_fl = { x: I_apex.x - L_arc * Math.sin(half_beta), y: I_apex.y + L_arc * Math.cos(half_beta) };
+
+          // 3. Đường trục tâm răng (màu xanh nét gạch) dóng từ vành trong qua điểm đo:
           const p_tc_start = { x: R_inner * Math.sin(half_alpha), y: -R_inner * Math.cos(half_alpha) };
-          const p_tc_end = { x: (Ra + S_gap * 0.15) * Math.sin(half_alpha), y: -(Ra + S_gap * 0.15) * Math.cos(half_alpha) };
-          dimsHtml += `
-            <!-- Trục tâm răng nét gạch-chấm -->
-            <line x1="${p_tc_start.x.toFixed(2)}" y1="${p_tc_start.y.toFixed(2)}" x2="${p_tc_end.x.toFixed(2)}" y2="${p_tc_end.y.toFixed(2)}" stroke="#0284c7" stroke-width="0.5" vector-effect="non-scaling-stroke" stroke-dasharray="6,2,1,2"/>
-          `;
-
-          // 2. Điểm đặt góc gamma ngay tại đỉnh sườn răng P2:
-          const V_gam = { x: P2.x, y: -P2.y };
-          const L_gam_ext = S_gap * 0.28;
-
-          // Tia 1: Kéo dài sườn răng theo phương beta/2:
-          const p_flank_end = { x: V_gam.x + L_gam_ext * Math.sin(half_beta), y: V_gam.y - L_gam_ext * Math.cos(half_beta) };
-          // Tia 2: Đường chuẩn song song trục tâm răng theo phương alpha/2:
-          const p_tc_par_end = { x: V_gam.x + L_gam_ext * Math.sin(half_alpha), y: V_gam.y - L_gam_ext * Math.cos(half_alpha) };
+          const p_tc_end = { x: (R_dim + textSz * 0.8) * Math.sin(half_alpha), y: -(R_dim + textSz * 0.8) * Math.cos(half_alpha) };
 
           dimsHtml += `
-            <line x1="${V_gam.x.toFixed(2)}" y1="${V_gam.y.toFixed(2)}" x2="${p_flank_end.x.toFixed(2)}" y2="${p_flank_end.y.toFixed(2)}" stroke="#ea580c" stroke-width="0.5" vector-effect="non-scaling-stroke" stroke-dasharray="3,1.5"/>
-            <line x1="${V_gam.x.toFixed(2)}" y1="${V_gam.y.toFixed(2)}" x2="${p_tc_par_end.x.toFixed(2)}" y2="${p_tc_par_end.y.toFixed(2)}" stroke="#0284c7" stroke-width="0.5" vector-effect="non-scaling-stroke" stroke-dasharray="4,2"/>
+            <!-- Trục tâm răng màu xanh nét gạch -->
+            <line x1="${p_tc_start.x.toFixed(2)}" y1="${p_tc_start.y.toFixed(2)}" x2="${p_tc_end.x.toFixed(2)}" y2="${p_tc_end.y.toFixed(2)}" stroke="#0284c7" stroke-width="0.6" vector-effect="non-scaling-stroke" stroke-dasharray="6,2,1,2"/>
+            <!-- Đoạn kéo dài sườn răng h3 ngắn gọn đến điểm đo -->
+            <line x1="${P2.x.toFixed(2)}" y1="${-P2.y.toFixed(2)}" x2="${(pt_fl.x + Math.sin(half_beta) * 3).toFixed(2)}" y2="${(pt_fl.y - Math.cos(half_beta) * 3).toFixed(2)}" stroke="#ea580c" stroke-width="0.5" vector-effect="non-scaling-stroke" stroke-dasharray="3,1.5"/>
           `;
 
-          // Cung đo góc gamma đặt tại đỉnh sườn V_gam:
-          const R_gam = L_gam_ext * 0.70;
-          const pt_gam_tc = { x: V_gam.x + R_gam * Math.sin(half_alpha), y: V_gam.y - R_gam * Math.cos(half_alpha) };
-          const pt_gam_fl = { x: V_gam.x + R_gam * Math.sin(half_beta), y: V_gam.y - R_gam * Math.cos(half_beta) };
-
+          // 4. Cung đo góc γ nối trực tiếp giữa đường sườn răng và trục tâm răng màu xanh:
           dimsHtml += `
-            <path d="M ${pt_gam_tc.x.toFixed(2)} ${pt_gam_tc.y.toFixed(2)} A ${R_gam.toFixed(2)} ${R_gam.toFixed(2)} 0 0 1 ${pt_gam_fl.x.toFixed(2)} ${pt_gam_fl.y.toFixed(2)}" fill="none" stroke="#ea580c" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+            <path d="M ${pt_fl.x.toFixed(2)} ${pt_fl.y.toFixed(2)} A ${L_arc.toFixed(2)} ${L_arc.toFixed(2)} 0 0 1 ${pt_tc.x.toFixed(2)} ${pt_tc.y.toFixed(2)}" fill="none" stroke="#ea580c" stroke-width="0.6" vector-effect="non-scaling-stroke"/>
           `;
-          const tan_tc = { x: Math.cos(half_alpha), y: Math.sin(half_alpha) };
-          const tan_fl = { x: -Math.cos(half_beta), y: -Math.sin(half_beta) };
-          dimsHtml += cadArrow(pt_gam_tc.x, pt_gam_tc.y, pt_gam_tc.x + tan_tc.x * arrowSz, pt_gam_tc.y + tan_tc.y * arrowSz, arrowSz * 0.8, '#ea580c');
-          dimsHtml += cadArrow(pt_gam_fl.x, pt_gam_fl.y, pt_gam_fl.x + tan_fl.x * arrowSz, pt_gam_fl.y + tan_fl.y * arrowSz, arrowSz * 0.8, '#ea580c');
 
+          const tan_fl = { x: Math.cos(half_beta), y: Math.sin(half_beta) };
+          const tan_tc = { x: -Math.cos(half_alpha), y: -Math.sin(half_alpha) };
+          dimsHtml += cadArrow(pt_fl.x, pt_fl.y, pt_fl.x + tan_fl.x * arrowSz, pt_fl.y + tan_fl.y * arrowSz, arrowSz * 0.8, '#ea580c');
+          dimsHtml += cadArrow(pt_tc.x, pt_tc.y, pt_tc.x + tan_tc.x * arrowSz, pt_tc.y + tan_tc.y * arrowSz, arrowSz * 0.8, '#ea580c');
+
+          // Chữ số kích thước góc γ
           const half_mid = (half_alpha + half_beta) / 2.0;
-          const tx_gam = V_gam.x + (R_gam + textSz * 0.6) * Math.sin(half_mid) + textSz * 0.3;
-          const ty_gam = V_gam.y - (R_gam + textSz * 0.6) * Math.cos(half_mid) - textSz * 0.2;
-          dimsHtml += `<text x="${tx_gam.toFixed(2)}" y="${ty_gam.toFixed(2)}" fill="#ea580c" font-size="${textSz}" font-weight="700" text-anchor="start">γ = ${gamma_val.toFixed(2)}°</text>`;
+          const tx_gam = I_apex.x - (L_arc - textSz * 0.8) * Math.sin(half_mid) + textSz * 0.2;
+          const ty_gam = I_apex.y + (L_arc - textSz * 0.8) * Math.cos(half_mid) - textSz * 0.3;
+          dimsHtml += `<text x="${tx_gam.toFixed(2)}" y="${ty_gam.toFixed(2)}" fill="#ea580c" font-size="${textSz}" font-weight="700" text-anchor="middle">γ = ${gamma_val.toFixed(2)}°</text>`;
         }
 
         // G. [MÀU XANH DƯƠNG #0284c7] GÓC BƯỚC RĂNG α
@@ -7036,17 +7079,22 @@
         const betaLbl = isKWN001 ? ('X = ' + beta_deg.toFixed(1) + '%%d') : ('beta = ' + beta_deg.toFixed(1) + '%%d');
         addText(ox - textH * 2.0, oy + Y_v + R_beta + textH * 0.4, textH, betaLbl, 'DIM_BETA');
 
-        // 7. Góc sườn gamma đo tại đỉnh sườn răng P2 (gọn gàng, sát thân răng):
+        // 7. Góc sườn gamma đo trực tiếp với trục tâm răng (màu xanh nét gạch) chuẩn KettenWulf:
         if (!isKWN001) {
-          const V_gam = { x: ox + P2.x, y: oy + P2.y };
-          const ext_gam = S_gap * 0.28;
-          const R_gam = ext_gam * 0.70;
-          const ang_tc_deg = (90.0 - (half_alpha * 180.0 / Math.PI));
-          const ang_fl_deg = (90.0 - (half_beta * 180.0 / Math.PI));
-          addLine(V_gam.x, V_gam.y, V_gam.x + ext_gam * Math.cos(ang_tc_deg * Math.PI / 180), V_gam.y + ext_gam * Math.sin(ang_tc_deg * Math.PI / 180), 'DIM_GAMMA');
-          addLine(V_gam.x, V_gam.y, V_gam.x + ext_gam * Math.cos(ang_fl_deg * Math.PI / 180), V_gam.y + ext_gam * Math.sin(ang_fl_deg * Math.PI / 180), 'DIM_GAMMA');
-          addArc(V_gam.x, V_gam.y, R_gam, Math.min(ang_tc_deg, ang_fl_deg), Math.max(ang_tc_deg, ang_fl_deg), 'DIM_GAMMA');
-          addCadLeaderDim(V_gam.x + R_gam * 0.8, V_gam.y + R_gam * 0.8, 45, textH * 2.5, textH * 4.5, 'gamma = ' + gamma_deg.toFixed(2) + '%%d', 'DIM_GAMMA', textH, arrowSz);
+          const s_flank = (P2.y * Math.sin(half_alpha) - P2.x * Math.cos(half_alpha)) / Math.sin(gamma_rad);
+          const t_center = (P2.x + s_flank * Math.sin(half_beta)) / Math.sin(half_alpha);
+          const I_apex = { x: ox + t_center * Math.sin(half_alpha), y: oy + t_center * Math.cos(half_alpha) };
+          const R_dim = Ra + S_gap * 0.08;
+          const L_arc = Math.abs(t_center - R_dim);
+
+          const pt_tc = { x: ox + R_dim * Math.sin(half_alpha), y: oy + R_dim * Math.cos(half_alpha) };
+          const pt_fl = { x: I_apex.x - L_arc * Math.sin(half_beta), y: I_apex.y - L_arc * Math.cos(half_beta) };
+
+          addLine(ox + P2.x, oy + P2.y, pt_fl.x + Math.sin(half_beta) * 3, pt_fl.y + Math.cos(half_beta) * 3, 'DIM_GAMMA');
+          const ang_tc_deg = 270.0 - (half_alpha * 180.0 / Math.PI);
+          const ang_fl_deg = 270.0 - (half_beta * 180.0 / Math.PI);
+          addArc(I_apex.x, I_apex.y, L_arc, Math.min(ang_tc_deg, ang_fl_deg), Math.max(ang_tc_deg, ang_fl_deg), 'DIM_GAMMA');
+          addCadLeaderDim(pt_tc.x, pt_tc.y, 45, textH * 2.5, textH * 4.5, 'gamma = ' + gamma_deg.toFixed(2) + '%%d', 'DIM_GAMMA', textH, arrowSz);
         }
       };
 
@@ -7634,6 +7682,39 @@
       if (inp2) AppState.diff_p2 = Math.max(5.0, parseFloat(inp2.value) || 120.0);
       updateDifferentPitchFactorsUI();
       onParamChange();
+    }
+
+    function loadKettenwulfP50Preset() {
+      const chk = document.getElementById('chkDifferentPitch');
+      if (chk) {
+        chk.checked = true;
+        onDifferentPitchToggle();
+      }
+      AppState.isDifferentPitch = true;
+      AppState.diff_p1 = 80.0;
+      AppState.diff_p2 = 120.0;
+      AppState.z = 6;
+      AppState.d1 = 25.0;
+      AppState.b1 = 25.0;
+      AppState.g = 35.0;
+      AppState.r4 = 3.0;
+
+      const inp1 = document.getElementById('input_diff_p1');
+      if (inp1) inp1.value = 80;
+      const inp2 = document.getElementById('input_diff_p2');
+      if (inp2) inp2.value = 120;
+      const numZ = document.getElementById('num_z');
+      if (numZ) numZ.value = 6;
+      const inpZ = document.getElementById('input_z');
+      if (inpZ) inpZ.value = 6;
+      const numD1 = document.getElementById('num_d1');
+      if (numD1) numD1.value = 25;
+      const inpD1 = document.getElementById('input_d1');
+      if (inpD1) inpD1.value = 25;
+      const inpB1 = document.getElementById('input_b1');
+      if (inpB1) inpB1.value = 25;
+
+      onDifferentPitchParamChange();
     }
 
     function updateDifferentPitchFactorsUI() {
