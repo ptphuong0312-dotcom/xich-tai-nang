@@ -1,0 +1,30 @@
+# Reference Catalogs & Large PDF files (>50MB)
+/Tai Lieu/
+backup/
+*.zip
+*.bak
+
+# Temporary debug files & loose screenshots in root
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.dxf
+*.txt
+*.log
+
+# Keep clean DXF samples if needed
+!clean_combined.dxf
+
+# Temporary test files
+test_*.html
+debug_*.html
+debug_*.txt
+debug_*.json
+
+# Workspace & Editor
+.agents/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

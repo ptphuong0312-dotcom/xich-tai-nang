@@ -1,0 +1,147 @@
+{
+  "KWN_001": {
+    "name": "KWN 001",
+    "standard_ref": "DIN 8187 / ISO 606 / ANSI DIN 8188",
+    "application": "Toothing of sprockets for roller chains",
+    "catalog_page": 46,
+    "formulas": {
+      "d0": "p / sin(180\u00b0 / z)",
+      "df": "d0 - d1",
+      "df_tolerance": "h11 (-0.00 to -tolerance)",
+      "da_rules": [
+        {
+          "condition": "z <= 6",
+          "formula": "d0 + 0.50 * d1"
+        },
+        {
+          "condition": "7 <= z <= 12",
+          "formula": "d0 + 0.55 * d1"
+        },
+        {
+          "condition": "13 <= z <= 25",
+          "formula": "d0 + 0.65 * d1"
+        },
+        {
+          "condition": "z >= 26",
+          "formula": "d0 + 0.75 * d1"
+        }
+      ],
+      "ds": "d0 - p",
+      "alpha": "360\u00b0 / z",
+      "r1": "0.505 * d1 + 0.069 * (d1 ** (1/3))",
+      "r2_rules": [
+        {
+          "condition": "z <= 6",
+          "z1": 6,
+          "formula": "0.008 * d1 * (6^2 + 180)"
+        },
+        {
+          "condition": "7 <= z <= 12",
+          "z1": 8,
+          "formula": "0.008 * d1 * (8^2 + 180)"
+        },
+        {
+          "condition": "z >= 13",
+          "z1": 12,
+          "formula": "0.008 * d1 * (12^2 + 180)"
+        }
+      ],
+      "roller_bed_angle_X": [
+        {
+          "condition": "z <= 6",
+          "angle_deg": 115
+        },
+        {
+          "condition": "7 <= z <= 12",
+          "angle_deg": 120
+        },
+        {
+          "condition": "z >= 13",
+          "angle_deg": 125
+        }
+      ],
+      "B1": "0.9 * b1"
+    }
+  },
+  "KWN_017": {
+    "name": "KWN 017",
+    "standard_ref": "ISO 1977 / DIN 8167 / DIN 8165",
+    "application": "Standard toothing of sprockets for bush conveyor chains",
+    "catalog_page": 48,
+    "formulas": {
+      "d0": "p / sin(180\u00b0 / z)",
+      "df": "d0 - d1",
+      "df_tolerance": "h11",
+      "da_rules": {
+        "with_roller": "d0 + 0.4 * d1",
+        "with_protection_roller": "d0 + 0.6 * d1",
+        "without_roller": "d0 + 0.8 * d1"
+      },
+      "ds": "p / tan(alpha / 2) - g - 2 * r4",
+      "alpha": "360\u00b0 / z",
+      "beta_table": [
+        {
+          "min_z": 6,
+          "max_z": 11,
+          "beta_deg": 74.0
+        },
+        {
+          "min_z": 12,
+          "max_z": 29,
+          "beta_deg": 56.0
+        },
+        {
+          "min_z": 30,
+          "max_z": 999,
+          "beta_deg": 38.0
+        }
+      ],
+      "gamma": "beta / 2 - 180\u00b0 / z",
+      "B1": "0.9 * b1",
+      "u": "0.02 * p",
+      "h3": "0.3 * d1",
+      "r1": "0.51 * d1",
+      "r2": "0.8 * p"
+    }
+  },
+  "KWN_015": {
+    "name": "KWN 015",
+    "standard_ref": "ISO 1977 / DIN 8167 / DIN 8165 (Deep Tooth Gap / Heavy Conveyors)",
+    "application": "Optimized force distribution toothing for conveyor chains",
+    "catalog_page": 47,
+    "formulas": {
+      "d0": "p / sin(180\u00b0 / z)",
+      "df": "d0 - d1",
+      "df_tolerance": "h11",
+      "da_rules": {
+        "with_roller": "d0 + 0.4 * d1",
+        "with_protection_roller": "d0 + 0.6 * d1",
+        "without_roller": "d0 + 0.8 * d1"
+      },
+      "ds": "p / tan(alpha / 2) - g - 2 * r4",
+      "alpha": "360\u00b0 / z",
+      "gamma": "custom_or_calculated (default 14.5\u00b0)",
+      "beta": "(alpha / 2 + gamma) * 2",
+      "B1": "0.9 * b1",
+      "u": "0.02 * p",
+      "h3": "0.3 * d1",
+      "r1": "0.51 * d1",
+      "r2": "0.8 * p"
+    }
+  },
+  "KWN_016": {
+    "name": "KWN 016",
+    "standard_ref": "KettenWulf Lantern Pinion Standard",
+    "application": "Lantern pinion sprockets (\u0110\u0129a ch\u1ed1t l\u1ed3ng \u0111\u00e8n)",
+    "catalog_page": 49,
+    "formulas": {
+      "d0": "(z * p) / pi",
+      "m": "p / pi",
+      "df": "d0 - 2 * (0.15 * m + r1)",
+      "da": "d0 + 2 * hk",
+      "r1": "0.5 * d1",
+      "B1": "3.3 * m",
+      "S1": "0.04 * m"
+    }
+  }
+}
