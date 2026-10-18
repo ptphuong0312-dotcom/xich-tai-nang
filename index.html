@@ -4386,11 +4386,12 @@
           const p1 = AppState.diff_p1 || 80.0;
           const p2 = AppState.diff_p2 || 120.0;
           d0 = n_factor * Math.sqrt(Math.pow(p1 + p2, 2) - (f_factor * p1 * p2));
-          p_eff = (p1 + p2) / 2.0;
+          p_eff = p1; // Răng đĩa xích được gia công chuẩn xác theo bước nhỏ p1
           theta1_val = 2.0 * Math.asin(p1 / d0);
           theta2_val = 2.0 * Math.asin(p2 / d0);
-          // Đường kính đệm má xích dưới bước lớn p2:
-          ds = 2.0 * Math.sqrt(Math.max(0, Math.pow(d0 / 2.0, 2) - Math.pow(p2 / 2.0, 2))) - g - (2.0 * r4);
+          // Đường kính hạ bậc thân đĩa ds theo chuẩn Catalog KettenWulf (Trang 48 & 50) để má xích bước lớn p2 không cấn vào vai đĩa:
+          const H2 = Math.sqrt(Math.max(0, Math.pow(d0 / 2.0, 2) - Math.pow(p2 / 2.0, 2)));
+          ds = 2.0 * (H2 - g / 2.0 - r4);
         } else if (AppState.isProtectionPitch) {
           // KETTENWULF CATALOG TRANG 51: ĐĨA BƯỚC BẢO VỆ (PROTECTION PITCH / HUNTING TOOTH)
           // Bảng tra z_prot: 5.5, 6.5, 7.5, ... tương ứng số răng thực tế Z_act = 2 * z_prot = 11, 13, 15, ... (số lẻ!)
@@ -4414,10 +4415,18 @@
         else da = d0 + 0.8 * d1;
 
         if (standard === 'KWN_017') {
-          if (z <= 11) beta_deg = 74.0;
-          else if (z <= 29) beta_deg = 56.0;
-          else beta_deg = 38.0;
-          gamma_deg = (beta_deg / 2.0) - (180.0 / z);
+          if (AppState.isDifferentPitch && theta1_val) {
+            const z_eff = (2.0 * Math.PI) / theta1_val;
+            if (z_eff <= 11) beta_deg = 74.0;
+            else if (z_eff <= 29) beta_deg = 56.0;
+            else beta_deg = 38.0;
+            gamma_deg = (beta_deg / 2.0) - (180.0 / z_eff);
+          } else {
+            if (z <= 11) beta_deg = 74.0;
+            else if (z <= 29) beta_deg = 56.0;
+            else beta_deg = 38.0;
+            gamma_deg = (beta_deg / 2.0) - (180.0 / z);
+          }
         } else {
           gamma_deg = gammaCustom;
           beta_deg = (alpha_deg / 2.0 + gamma_deg) * 2.0;
@@ -5199,34 +5208,15 @@
           full_pts.push(polar_ccw(pt.r, psi_k + theta1 - pt.xi));
         }
 
-        // 4. Đoạn lượn má xích hạ thấp Rs qua bước lớn p2 (KettenWulf Trang 50) tránh cấn má xích:
+        // 4. Vành chuyển tiếp trơn tru tại bán kính chân răng Rf qua bước lớn p2 (Catalog KettenWulf P50 Hình 1):
+        // Lưu ý: ds là đường kính hạ bậc thân đĩa (Section View / Base Circle nét đứt) để má xích không cấn hông,
+        // còn chu vi đỉnh vành đĩa nối giữa 2 hốc con lăn chạy êm ái trên bán kính đáy hốc Rf (không khoét rãnh sâu).
         const psi_B = psi_k + theta1;
-        const ang_rel_start = psi_B + theta2 * 0.15;
-        const ang_rel_end = psi_B + theta2 * 0.85;
-
-        // Chuyển tiếp mượt bậc 3 (Hermite fillet C1) từ Rf xuống Rs:
-        const n_t = 10;
-        for (let i = 1; i < n_t; i++) {
-          const t = i / n_t;
-          const r = Rf - (Rf - Rs) * (3 * t * t - 2 * t * t * t);
-          const psi = psi_B + (ang_rel_start - psi_B) * t;
-          full_pts.push(polar_ccw(r, psi));
-        }
-
-        // Cung tròn đáy lõm Rs:
-        const n_rs = 14;
-        for (let i = 0; i <= n_rs; i++) {
-          const psi = ang_rel_start + (ang_rel_end - ang_rel_start) * (i / n_rs);
-          full_pts.push(polar_ccw(Rs, psi));
-        }
-
-        // Chuyển tiếp mượt bậc 3 từ Rs lên lại Rf tại hốc A tiếp theo (psi_k + tc):
-        const psi_next = psi_k + tc;
-        for (let i = 1; i < n_t; i++) {
-          const t = i / n_t;
-          const r = Rs + (Rf - Rs) * (3 * t * t - 2 * t * t * t);
-          const psi = ang_rel_end + (psi_next - ang_rel_end) * t;
-          full_pts.push(polar_ccw(r, psi));
+        const psi_next_A = psi_k + tc;
+        const n_bridge = 16;
+        for (let i = 1; i < n_bridge; i++) {
+          const psi = psi_B + (psi_next_A - psi_B) * (i / n_bridge);
+          full_pts.push(polar_ccw(Rf, psi));
         }
       }
 
@@ -5456,7 +5446,7 @@
         if (Rs > 0) {
           const a_ds = 315.0;
           const p_ds = { x: Rs * Math.cos(a_ds * Math.PI / 180), y: -Rs * Math.sin(a_ds * Math.PI / 180) };
-          dimsHtml += cadLeaderDim(p_ds.x, p_ds.y, a_ds, Ra * 0.28, textSz * 4.8, `Ø ds = ${ds.toFixed(1)} mm`, isLight ? '#d97706' : '#fbbf24', arrowSz, textSz);
+          dimsHtml += cadLeaderDim(p_ds.x, p_ds.y, a_ds, Ra * 0.28, textSz * 4.8, `Ø ds = ${ds.toFixed(1)} mm (Hạ bậc vai đĩa)`, isLight ? '#d97706' : '#fbbf24', arrowSz, textSz);
         }
 
         // 7. Cung đo góc bước răng α giữa 2 rãnh
@@ -6044,9 +6034,10 @@
           <line x1="0" y1="${roller_y - textSz * 0.8}" x2="0" y2="${roller_y + textSz * 0.8}" stroke="${colRollerCross}" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
         `;
         const contactLbl = (standard === 'KWN_001' || AppState.chainType === 'with_roller') ? `Ø d1 = ${d1.toFixed(2)} mm (Con lăn)` : (standard === 'KWN_016' ? `Ø d1 = ${d1.toFixed(2)} mm (Chốt lồng đèn)` : `Ø d3 = ${d1.toFixed(2)} mm (Ống lót)`);
-        const roll_touch_x = -roller_r * 0.7071;
-        const roll_touch_y = roller_y - roller_r * 0.7071;
-        g.innerHTML += cadLeaderDim(roll_touch_x, roll_touch_y, 140, S_gap * 0.16, textSz * 5.2, contactLbl, colRollerDimText, arrowSz, textSz);
+        // Đặt điểm tiếp xúc ở đỉnh trên con lăn và hướng leader góc 115° với cổ dài hơn để tách biệt hoàn toàn lên phía trên r2:
+        const roll_touch_x = -roller_r * 0.42;
+        const roll_touch_y = roller_y - roller_r * 0.91;
+        g.innerHTML += cadLeaderDim(roll_touch_x, roll_touch_y, 115, S_gap * 0.28, textSz * 5.2, contactLbl, colRollerDimText, arrowSz, textSz);
 
         // ĐỐI VỚI TIÊU CHUẨN KWN 016: DÓNG RÕ KHE HỞ ĐÁY RÃNH CHỐT c = 0.15·m (TRÁNH HIỂU NHẦM LƠ LỬNG)
         if (standard === 'KWN_016') {
@@ -7776,6 +7767,14 @@
       const inp2 = document.getElementById('input_diff_p2');
       if (inp1) AppState.diff_p1 = Math.max(5.0, parseFloat(inp1.value) || 80.0);
       if (inp2) AppState.diff_p2 = Math.max(5.0, parseFloat(inp2.value) || 120.0);
+      if (AppState.d1 > AppState.diff_p1 * 0.55) {
+        AppState.d1 = Math.round(AppState.diff_p1 * 0.35);
+        const inpD1 = document.getElementById('input_d1');
+        if (inpD1) inpD1.value = AppState.d1;
+      }
+      if (AppState.g > AppState.diff_p1 * 0.55) {
+        AppState.g = Math.round(AppState.diff_p1 * 0.45);
+      }
       updateDifferentPitchFactorsUI();
       onParamChange();
     }
