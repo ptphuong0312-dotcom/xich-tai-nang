@@ -18,13 +18,16 @@ def test_dxf_files():
         print("    [SKIP] ezdxf not installed, skipping direct ezdxf parsing")
         return
 
-    # Look for clean dxf files
-    dxf_candidates = [f for f in os.listdir('.') if f.startswith('clean_') and f.endswith('.dxf')]
+    # Look for clean dxf files in tests/outputs or root
+    search_dirs = [os.path.join('tests', 'outputs'), '.']
+    dxf_candidates = []
+    for sdir in search_dirs:
+        if os.path.exists(sdir):
+            dxf_candidates.extend([os.path.join(sdir, f) for f in os.listdir(sdir) if f.startswith('clean_') and f.endswith('.dxf')])
     if not dxf_candidates:
-        dxf_candidates = [f for f in os.listdir('.') if f.endswith('.dxf') and not f.startswith('verified_') and not f.startswith('test_')]
-        print("    [INFO] No .dxf files in root directory, creating reference test...")
-        # create reference
-        dxf_candidates = []
+        for sdir in search_dirs:
+            if os.path.exists(sdir):
+                dxf_candidates.extend([os.path.join(sdir, f) for f in os.listdir(sdir) if f.endswith('.dxf') and not f.startswith('verified_') and not f.startswith('test_')])
 
     for f in dxf_candidates:
         print(f"    Checking {f}...")

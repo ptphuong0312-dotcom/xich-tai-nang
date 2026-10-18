@@ -21,7 +21,7 @@ backup/
 !assets/**
 
 # Keep clean DXF samples if needed
-!clean_combined.dxf
+!tests/outputs/clean_*.dxf
 
 # Temporary test files
 test_*.html
