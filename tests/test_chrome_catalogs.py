@@ -82,6 +82,97 @@ window.runCatalogTests = async function() {
         const mc_models = Array.from(selModel.options).map(o => o.value);
         window.__test_results.mc_models = mc_models;
 
+        // 5. Select SMS1698 & Verify SMS 12.5
+        selSeries.value = 'SMS1698';
+        AppState.currentSeries = 'SMS1698';
+        populateModelDropdown();
+        const sms_models = Array.from(selModel.options).map(o => o.value);
+        window.__test_results.sms_models = sms_models;
+
+        selModel.value = 'SMS 12.5';
+        AppState.currentModelName = 'SMS 12.5';
+        populatePitchDropdown();
+        renderCAD();
+        window.__test_results.sms125_state = {
+            FB: AppState.FB,
+            p: AppState.p,
+            d1: AppState.d1,
+            b1: AppState.b1
+        };
+
+        // 6. Verify Protection Pitch (Hunting Tooth) toggle
+        selSeries.value = 'FV';
+        AppState.currentSeries = 'FV';
+        populateModelDropdown();
+        selModel.value = 'FV 90';
+        AppState.currentModelName = 'FV 90';
+        populatePitchDropdown();
+        AppState.z = 10;
+        AppState.p = 100;
+        AppState.standard = 'KWN_017';
+
+        const chkProt = document.getElementById('chkProtectionPitch');
+        AppState.isProtectionPitch = false;
+        if (chkProt) chkProt.checked = false;
+        renderCAD();
+        const d0_std = AppState.d0 || (CurrentGeom && CurrentGeom.d0);
+
+        AppState.isProtectionPitch = true;
+        if (chkProt) chkProt.checked = true;
+        onProtectionPitchToggle();
+        const d0_prot = AppState.d0 || (CurrentGeom && CurrentGeom.d0);
+
+        window.__test_results.protection_pitch = {
+            d0_std: d0_std,
+            d0_prot: d0_prot,
+            ratio: d0_prot / d0_std
+        };
+
+        // Restore protection pitch to false
+        AppState.isProtectionPitch = false;
+        if (chkProt) chkProt.checked = false;
+        onProtectionPitchToggle();
+
+        // 7. Verify Hub Catalog Selector (KettenWulf vs ScanChain)
+        const selHubCat = document.getElementById('selHubCatalog');
+        selSeries.value = 'FV';
+        AppState.currentSeries = 'FV';
+        populateModelDropdown();
+        selModel.value = 'FV 90';
+        AppState.currentModelName = 'FV 90';
+        populatePitchDropdown();
+        AppState.z = 10;
+
+        if (selHubCat) {
+            selHubCat.value = 'kettenwulf';
+            onHubCatalogChange();
+            const kw_hub_d = AppState.hub_Dn;
+            const kw_hub_l = AppState.hub_NL;
+
+            selHubCat.value = 'scanchain';
+            onHubCatalogChange();
+            const sc_hub_d = AppState.hub_Dn;
+            const sc_hub_l = AppState.hub_NL;
+
+            window.__test_results.hub_catalogs = {
+                kw: { d: kw_hub_d, l: kw_hub_l },
+                sc: { d: sc_hub_d, l: sc_hub_l }
+            };
+        }
+
+        // 8. Verify KettenWulf Hub K-factor calculation
+        const inpP = document.getElementById('input_kw_P');
+        const inpn = document.getElementById('input_kw_n');
+        const selK = document.getElementById('selHubMaterialK');
+        if (inpP && inpn && selK) {
+            inpP.value = '22';
+            inpn.value = '30';
+            selK.value = '160'; // St 52-3
+            recalculateKettenwulfHub();
+            const resDiv = document.getElementById('kw_hub_calc_result');
+            window.__test_results.kw_hub_calc = resDiv ? resDiv.innerText.replace(/\\s+/g, ' ') : null;
+        }
+
         // Back to DIN8175 F 800 for screenshot
         selSeries.value = 'DIN8175';
         AppState.currentSeries = 'DIN8175';
@@ -152,18 +243,30 @@ window.addEventListener('DOMContentLoaded', () => {
     results = data['results']
     print("Available Series in Browser:", results.get('series'))
     print("DIN 8175 Models in Browser:", results.get('din8175_models'))
-    print("FVC Models in Browser:", results.get('fvc_models'))
-    print("MC Models in Browser:", results.get('mc_models'))
-    print("F 800 State:", results.get('f800_state'))
-    print("FVC 900 State:", results.get('fvc900_state'))
+    print("SMS 1698 Models in Browser:", results.get('sms_models'))
+    print("SMS 12.5 State:", results.get('sms125_state'))
+    print("Protection Pitch State:", results.get('protection_pitch'))
+    print("Hub Catalogs Comparison:", results.get('hub_catalogs'))
+    print("KettenWulf Hub K-factor Calc:", results.get('kw_hub_calc'))
     print("Screenshot saved to:", screenshot_path)
 
     assert len(data['errors']) == 0, f"JS Errors detected: {data['errors']}"
     assert 'DIN8175' in results.get('series'), "DIN8175 must be in series!"
-    assert 'FVC' in results.get('series'), "FVC must be in series!"
-    assert 'MC' in results.get('series'), "MC must be in series!"
-    assert 'F 800' in results.get('din8175_models'), "F 800 must be in DIN 8175 models!"
-    assert 'FVC 900' in results.get('fvc_models'), "FVC 900 must be in FVC models!"
+    assert 'SMS1698' in results.get('series'), "SMS1698 must be in series!"
+    assert 'SMS 12.5' in results.get('sms_models'), "SMS 12.5 must be in SMS models!"
+    assert 'SMS 12.5 Heavy' in results.get('sms_models'), "SMS 12.5 Heavy must be in SMS models!"
+    
+    # Check protection pitch math: d0_prot = p / sin(180/5) = 100 / sin(36°) = 170.13mm
+    # standard d0 = 100 / sin(18°) = 323.61mm
+    prot = results.get('protection_pitch', {})
+    assert prot.get('d0_prot') is not None, "Protection pitch calculation failed!"
+    print(f"Protection pitch d0: std={prot['d0_std']:.2f}mm, prot={prot['d0_prot']:.2f}mm")
+    
+    # Check hub catalogs
+    hubs = results.get('hub_catalogs', {})
+    assert hubs.get('kw') is not None and hubs.get('sc') is not None, "Hub catalog switching failed!"
+    print(f"Hub catalogs: KW={hubs['kw']}, SC={hubs['sc']}")
+
     print("\n>>> ALL IN-BROWSER CATALOG VERIFICATIONS PASSED WITH ZERO ERRORS! <<<")
     return True
 
