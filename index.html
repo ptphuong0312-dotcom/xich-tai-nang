@@ -3,8 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KettenWulf CAD">
+  <meta name="theme-color" content="#111827">
   <title>KettenWulf Sprocket CAD – Ứng Dụng Tính Toán & Thiết Kế Đĩa Xích 2D</title>
   <style>
+    @keyframes spinAnim {
+      100% { transform: rotate(360deg); }
+    }
+    .spin {
+      animation: spinAnim 0.75s linear infinite;
+    }
+
     :root {
       --bg-main: #0a0e17;
       --bg-panel: #111827;
@@ -85,7 +96,27 @@
 
     .header-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    @media (max-width: 640px) {
+      header {
+        padding: 8px 12px;
+        gap: 8px;
+      }
+      .brand-title {
+        font-size: 14px;
+      }
+      .brand-sub {
+        display: none;
+      }
+      .btn {
+        padding: 6px 10px;
+        font-size: 11px;
+        gap: 5px;
+      }
     }
 
     .btn {
@@ -605,6 +636,10 @@
     </div>
 
     <div class="header-actions">
+      <button class="btn btn-secondary" id="btnForceUpdate" onclick="forceAppUpdate()" title="Cưỡng bức xoá cache và cập nhật phiên bản mới nhất từ server" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 6px;">
+        <svg id="iconForceUpdate" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Cập nhật
+      </button>
       <button class="btn btn-secondary" onclick="window.print()">
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
         In Báo Cáo A4
@@ -6139,6 +6174,44 @@
 
       document.getElementById('cadSvg').setAttribute('viewBox', `${vX.toFixed(2)} ${min_Y.toFixed(2)} ${vW.toFixed(2)} ${vH.toFixed(2)}`);
       document.getElementById('hudStatus').innerText = `Mặt cắt dọc trục A-A chuẩn ${standard} | B1: ${B1.toFixed(1)} mm | da: Ø${da.toFixed(1)} | df: Ø${df.toFixed(1)} | NL: ${NL.toFixed(1)} mm`;
+    }
+
+    async function forceAppUpdate() {
+      const btn = document.getElementById('btnForceUpdate');
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.innerHTML = `<svg class="spin" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Cập nhật...`;
+      }
+
+      try {
+        // 1. Xoá sạch toàn bộ Cache Storage (PWA / Safari / Service Worker caches)
+        if ('caches' in window) {
+          const cacheKeys = await caches.keys();
+          await Promise.all(cacheKeys.map(k => caches.delete(k)));
+        }
+
+        // 2. Huỷ đăng ký mọi Service Worker hiện có
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(r => r.unregister()));
+        }
+
+        // 3. Xoá sessionStorage
+        sessionStorage.clear();
+
+        // 4. Tạo URL kèm tham số thời gian để vượt qua hoàn toàn bộ nhớ đệm iPhone Web Clip
+        const t = Date.now();
+        const url = new URL(window.location.href);
+        url.searchParams.set('_v', t);
+        url.searchParams.set('_force', '1');
+
+        // 5. Cưỡng bức tải mới từ máy chủ Vercel
+        window.location.replace(url.toString());
+      } catch (err) {
+        console.warn('Lỗi khi xoá cache:', err);
+        window.location.href = window.location.pathname + '?_v=' + Date.now();
+      }
     }
 
     function exportSVG() {
