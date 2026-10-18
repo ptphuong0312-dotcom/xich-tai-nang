@@ -17,13 +17,15 @@ def main():
     test_scripts = [
         os.path.join('tests', 'test_geometry_consistency.py'),
         os.path.join('tests', 'test_chain_roller_clearance.py'),
-        os.path.join('tests', 'test_dxf_syntax_and_layers.py')
+        os.path.join('tests', 'test_dxf_syntax_and_layers.py'),
+        os.path.join('tests', 'audit_and_crosscheck_all_data.py'),
+        os.path.join('tests', 'test_chrome_catalogs.py')
     ]
 
     all_passed = True
     for script in test_scripts:
         print(f"\n--- Running: {script} ---")
-        res = subprocess.run([sys.executable, script], capture_output=True, text=True, encoding='utf-8')
+        res = subprocess.run([sys.executable, script], capture_output=True, text=True, encoding='utf-8', errors='replace')
         print(res.stdout)
         if res.returncode != 0:
             print(res.stderr)
