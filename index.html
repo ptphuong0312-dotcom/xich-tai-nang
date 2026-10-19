@@ -397,6 +397,46 @@
       box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
     }
 
+    /* Application Wizard Mode Cards */
+    .app-wizard-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 7px 9px;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+    .app-wizard-btn:hover {
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.4);
+      transform: translateY(-1px);
+    }
+    .app-wizard-btn.active {
+      background: rgba(56, 189, 248, 0.20) !important;
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+    .app-wizard-btn.active-amber {
+      background: rgba(245, 158, 11, 0.20) !important;
+      border-color: #fbbf24 !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+    }
+    .app-wizard-btn.active-emerald {
+      background: rgba(16, 185, 129, 0.20) !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+    }
+    .app-wizard-btn.active-purple {
+      background: rgba(168, 85, 247, 0.20) !important;
+      border-color: #c084fc !important;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
+    }
+
     /* Right Section: CAD Canvas & Inspection */
     .cad-workspace {
       flex: 1;
@@ -712,7 +752,41 @@
   <main>
     <!-- Left Sidebar -->
     <div class="sidebar">
-      
+
+      <!-- APPLICATION WIZARD: CHỌN MỤC ĐÍCH ỨNG DỤNG ĐĨA XÍCH -->
+      <div class="card" style="margin-bottom: 0px; padding: 10px 12px; background: linear-gradient(180deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <span style="font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px;">
+            🎯 Ứng Dụng Thiết Kế Đĩa Xích (Wizard)
+          </span>
+          <span id="appModeBadge" style="font-size: 9px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">
+            ⚙️ Băng cào bước đơn
+          </span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <button type="button" id="btnAppMode_conveyor_single" class="app-wizard-btn active" onclick="setAppMode('conveyor_single')">
+            <span style="font-size: 11px; font-weight: 700; color: #f8fafc;">⚙️ Băng cào bước đơn</span>
+            <span style="font-size: 9px; color: #94a3b8;">ISO 1977 / DIN 8167</span>
+          </button>
+          <button type="button" id="btnAppMode_conveyor_diff" class="app-wizard-btn" onclick="setAppMode('conveyor_diff')">
+            <span style="font-size: 11px; font-weight: 700; color: #fbbf24;">⚡ Bước kép so le</span>
+            <span style="font-size: 9px; color: #94a3b8;">Catalog P50 (p₁ ≠ p₂)</span>
+          </button>
+          <button type="button" id="btnAppMode_conveyor_prot" class="app-wizard-btn" onclick="setAppMode('conveyor_prot')">
+            <span style="font-size: 11px; font-weight: 700; color: #10b981;">🛡️ Bước bảo vệ</span>
+            <span style="font-size: 9px; color: #94a3b8;">Catalog P51 (Tăng 2× thọ)</span>
+          </button>
+          <button type="button" id="btnAppMode_roller_drive" class="app-wizard-btn" onclick="setAppMode('roller_drive')">
+            <span style="font-size: 11px; font-weight: 700; color: #38bdf8;">🔗 Xích con lăn cao tốc</span>
+            <span style="font-size: 9px; color: #94a3b8;">DIN 8187 / ANSI</span>
+          </button>
+          <button type="button" id="btnAppMode_lantern" class="app-wizard-btn" style="grid-column: span 2;" onclick="setAppMode('lantern')">
+            <span style="font-size: 11px; font-weight: 700; color: #c084fc;">🔧 Đĩa chốt lồng đèn (Lantern Pinion)</span>
+            <span style="font-size: 9px; color: #94a3b8;">KettenWulf KWN 016 – Ăn khớp chốt theo Modun m = p/π</span>
+          </button>
+        </div>
+      </div>
+
       <!-- THƯ VIỆN TIÊU CHUẨN XÍCH & BIÊN DẠNG KETTENWULF GỐC -->
       <div class="card">
         <div class="card-title">
@@ -750,10 +824,16 @@
               <!-- Dynamic -->
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group" id="groupSinglePitch">
             <div class="form-label"><span>4. Bước xích p</span></div>
             <select id="selStandardPitch" onchange="onStandardPitchChange()">
               <!-- Dynamic -->
+            </select>
+          </div>
+          <div class="form-group" id="groupDualPitch" style="display: none;">
+            <div class="form-label"><span style="color: #fbbf24; font-weight: 700;">4. Cặp bước (p₁, p₂)</span></div>
+            <select id="selDualPitchPair" onchange="onDualPitchPairChange()" style="font-weight: 600; color: #fbbf24; border-color: rgba(245, 158, 11, 0.4);">
+              <!-- Dynamic from p_list -->
             </select>
           </div>
         </div>
@@ -762,6 +842,9 @@
         <div id="chainSpecCard" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 7px 9px;">
           <!-- Populated by JS -->
         </div>
+
+        <!-- BẢNG ĐÁNH GIÁ KHẢ THI ĐĨA BƯỚC KÉP (LIVE FEASIBILITY SCORECARD) -->
+        <div id="diffPitchScorecard" style="display: none; margin-top: 8px;"></div>
 
         <!-- Quick Presets -->
         <div style="margin-top: 8px;">
@@ -3655,6 +3738,7 @@
        HỆ THỐNG QUẢN LÝ DỮ LIỆU & THUẬT TOÁN HÌNH HỌC KETTENWULF
        ========================================================================= */
     const AppState = {
+      appMode: 'conveyor_single', // Chế độ ứng dụng: conveyor_single, conveyor_diff, conveyor_prot, roller_drive, lantern
       p: 400.0,
       z: 8,
       d1: 50.0,       // Tiếp xúc với hốc răng (d3 cho xích ống lót, d1 cho xích con lăn)
@@ -3771,11 +3855,430 @@
 
     /* =========================================================================
        THƯ VIỆN TIÊU CHUẨN XÍCH & BỘ CHỌN PHÂN CẤP (HIERARCHICAL CATALOG ENGINE)
+       KIẾN TRÚC MỤC ĐÍCH ỨNG DỤNG (PURPOSE-DRIVEN DESIGN FLOW - PHƯƠNG ÁN 3)
        ========================================================================= */
     function initChainCatalogUI() {
       const selStd = document.getElementById('selStandard');
       if (selStd) selStd.value = AppState.standard;
-      populateSeriesDropdown();
+      setAppMode(AppState.appMode || 'conveyor_single');
+    }
+
+    function setAppMode(mode) {
+      AppState.appMode = mode;
+
+      // Cập nhật trạng thái hiển thị của 5 nút Wizard
+      ['conveyor_single', 'conveyor_diff', 'conveyor_prot', 'roller_drive', 'lantern'].forEach(m => {
+        const btn = document.getElementById('btnAppMode_' + m);
+        if (!btn) return;
+        btn.classList.remove('active', 'active-amber', 'active-emerald', 'active-purple');
+        if (m === mode) {
+          if (m === 'conveyor_diff') btn.classList.add('active-amber');
+          else if (m === 'conveyor_prot') btn.classList.add('active-emerald');
+          else if (m === 'lantern') btn.classList.add('active-purple');
+          else btn.classList.add('active');
+        }
+      });
+
+      const badge = document.getElementById('appModeBadge');
+      const groupSingle = document.getElementById('groupSinglePitch');
+      const groupDual = document.getElementById('groupDualPitch');
+      const chkDiff = document.getElementById('chkDifferentPitch');
+      const chkProt = document.getElementById('chkProtectionPitch');
+      const panelDiff = document.getElementById('panelDifferentPitch');
+      const panelProt = document.getElementById('panelProtectionPitch');
+      const selStd = document.getElementById('selStandard');
+
+      if (mode === 'conveyor_diff') {
+        if (badge) {
+          badge.innerText = '⚡ Băng cào bước kép (P50)';
+          badge.style.color = '#fbbf24';
+          badge.style.background = 'rgba(245, 158, 11, 0.15)';
+          badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        }
+        AppState.isDifferentPitch = true;
+        AppState.isProtectionPitch = false;
+        if (chkDiff) chkDiff.checked = true;
+        if (chkProt) chkProt.checked = false;
+        if (panelDiff) panelDiff.style.display = 'block';
+        if (panelProt) panelProt.style.display = 'none';
+
+        // Tự động khóa biên dạng chuẩn xích tải cào KWN 017 / KWN 015
+        if (AppState.standard === 'KWN_001' || AppState.standard === 'KWN_016') {
+          AppState.standard = 'KWN_017';
+          if (selStd) selStd.value = 'KWN_017';
+        }
+
+        // Chuyển sang bộ chọn Cặp bước kép thông minh
+        if (groupSingle) groupSingle.style.display = 'none';
+        if (groupDual) groupDual.style.display = 'block';
+
+        // Giới hạn số răng z trong ngưỡng chuẩn Catalog KettenWulf P50 (z = 4..14)
+        const sliderZ = document.getElementById('input_z');
+        if (sliderZ) {
+          sliderZ.min = 4;
+          sliderZ.max = 14;
+        }
+        if (AppState.z > 14) AppState.z = 6;
+        if (AppState.z < 4) AppState.z = 4;
+        const numZ = document.getElementById('num_z');
+        if (numZ) numZ.value = AppState.z;
+        if (sliderZ) sliderZ.value = AppState.z;
+
+        updateStandardDropdownState();
+        populateSeriesDropdown();
+        populateDualPitchPairDropdown();
+
+      } else if (mode === 'conveyor_prot') {
+        if (badge) {
+          badge.innerText = '🛡️ Băng cào bước bảo vệ (P51)';
+          badge.style.color = '#10b981';
+          badge.style.background = 'rgba(16, 185, 129, 0.15)';
+          badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        }
+        AppState.isDifferentPitch = false;
+        AppState.isProtectionPitch = true;
+        if (chkDiff) chkDiff.checked = false;
+        if (chkProt) chkProt.checked = true;
+        if (panelDiff) panelDiff.style.display = 'none';
+        if (panelProt) panelProt.style.display = 'block';
+
+        if (AppState.standard === 'KWN_001' || AppState.standard === 'KWN_016') {
+          AppState.standard = 'KWN_017';
+          if (selStd) selStd.value = 'KWN_017';
+        }
+
+        if (groupSingle) groupSingle.style.display = 'block';
+        if (groupDual) groupDual.style.display = 'none';
+
+        const sliderZ = document.getElementById('input_z');
+        if (sliderZ) {
+          sliderZ.min = 5;
+          sliderZ.max = 50;
+        }
+
+        updateStandardDropdownState();
+        populateSeriesDropdown();
+
+      } else if (mode === 'roller_drive') {
+        if (badge) {
+          badge.innerText = '🔗 Xích con lăn (DIN/ANSI)';
+          badge.style.color = '#38bdf8';
+          badge.style.background = 'rgba(56, 189, 248, 0.15)';
+          badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        }
+        AppState.isDifferentPitch = false;
+        AppState.isProtectionPitch = false;
+        if (chkDiff) chkDiff.checked = false;
+        if (chkProt) chkProt.checked = false;
+        if (panelDiff) panelDiff.style.display = 'none';
+        if (panelProt) panelProt.style.display = 'none';
+
+        AppState.standard = 'KWN_001';
+        if (selStd) selStd.value = 'KWN_001';
+
+        if (groupSingle) groupSingle.style.display = 'block';
+        if (groupDual) groupDual.style.display = 'none';
+
+        const sliderZ = document.getElementById('input_z');
+        if (sliderZ) {
+          sliderZ.min = 5;
+          sliderZ.max = 50;
+        }
+
+        updateStandardDropdownState();
+        populateSeriesDropdown();
+
+      } else if (mode === 'lantern') {
+        if (badge) {
+          badge.innerText = '🔧 Đĩa chốt lồng đèn (KWN 016)';
+          badge.style.color = '#c084fc';
+          badge.style.background = 'rgba(192, 132, 252, 0.15)';
+          badge.style.borderColor = 'rgba(192, 132, 252, 0.4)';
+        }
+        AppState.isDifferentPitch = false;
+        AppState.isProtectionPitch = false;
+        if (chkDiff) chkDiff.checked = false;
+        if (chkProt) chkProt.checked = false;
+        if (panelDiff) panelDiff.style.display = 'none';
+        if (panelProt) panelProt.style.display = 'none';
+
+        AppState.standard = 'KWN_016';
+        if (selStd) selStd.value = 'KWN_016';
+
+        if (groupSingle) groupSingle.style.display = 'block';
+        if (groupDual) groupDual.style.display = 'none';
+
+        updateStandardDropdownState();
+        populateSeriesDropdown();
+
+      } else {
+        // conveyor_single
+        if (badge) {
+          badge.innerText = '⚙️ Băng cào bước đơn';
+          badge.style.color = '#38bdf8';
+          badge.style.background = 'rgba(56, 189, 248, 0.15)';
+          badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        }
+        AppState.isDifferentPitch = false;
+        AppState.isProtectionPitch = false;
+        if (chkDiff) chkDiff.checked = false;
+        if (chkProt) chkProt.checked = false;
+        if (panelDiff) panelDiff.style.display = 'none';
+        if (panelProt) panelProt.style.display = 'none';
+
+        if (AppState.standard === 'KWN_001' || AppState.standard === 'KWN_016') {
+          AppState.standard = 'KWN_017';
+          if (selStd) selStd.value = 'KWN_017';
+        }
+
+        if (groupSingle) groupSingle.style.display = 'block';
+        if (groupDual) groupDual.style.display = 'none';
+
+        const sliderZ = document.getElementById('input_z');
+        if (sliderZ) {
+          sliderZ.min = 5;
+          sliderZ.max = 50;
+        }
+
+        updateStandardDropdownState();
+        populateSeriesDropdown();
+      }
+
+      onStandardChange();
+      onParamChange();
+      updateDiffPitchScorecardUI();
+    }
+
+    function updateStandardDropdownState() {
+      const selStd = document.getElementById('selStandard');
+      if (!selStd) return;
+      const isConveyorMode = ['conveyor_single', 'conveyor_diff', 'conveyor_prot'].includes(AppState.appMode);
+
+      Array.from(selStd.options).forEach(opt => {
+        if (isConveyorMode) {
+          opt.disabled = (opt.value === 'KWN_001' || opt.value === 'KWN_016');
+        } else if (AppState.appMode === 'roller_drive') {
+          opt.disabled = (opt.value !== 'KWN_001');
+        } else if (AppState.appMode === 'lantern') {
+          opt.disabled = (opt.value !== 'KWN_016');
+        } else {
+          opt.disabled = false;
+        }
+      });
+    }
+
+    function generatePitchPairsFromModel(model) {
+      if (!model) return [];
+      const pList = model.p_list || [];
+      const d1 = (model.d3 !== undefined ? model.d3 : model.d1) || 25.0;
+      const min_p1 = Math.round(2.0 * d1);
+      const pairs = [];
+
+      for (let i = 0; i < pList.length; i++) {
+        for (let j = i + 1; j < pList.length; j++) {
+          const p1 = pList[i];
+          const p2 = pList[j];
+          const ratio = p2 / p1;
+          if (ratio >= 1.15 && ratio <= 1.85 && p1 >= min_p1) {
+            pairs.push({
+              p1,
+              p2,
+              ratio,
+              isRecommended: Math.abs(ratio - 1.50) <= 0.15
+            });
+          }
+        }
+      }
+
+      // Nếu không có cặp khả thi từ p_list gộp, tự động sinh cặp 1.5x chuẩn từ dải p_list
+      if (pairs.length === 0 && pList.length > 0) {
+        pList.forEach(pVal => {
+          if (pVal >= min_p1) {
+            pairs.push({
+              p1: pVal,
+              p2: Math.round(pVal * 1.5),
+              ratio: 1.50,
+              isRecommended: true
+            });
+          }
+        });
+      }
+
+      if (pairs.length === 0) {
+        const safe_p1 = Math.max(50, Math.round(2.2 * d1));
+        pairs.push({
+          p1: safe_p1,
+          p2: Math.round(safe_p1 * 1.5),
+          ratio: 1.50,
+          isRecommended: true
+        });
+      }
+
+      pairs.sort((a, b) => {
+        const diffA = Math.abs(a.ratio - 1.50);
+        const diffB = Math.abs(b.ratio - 1.50);
+        if (Math.abs(diffA - diffB) > 0.05) return diffA - diffB;
+        return a.p1 - b.p1;
+      });
+
+      return pairs;
+    }
+
+    function populateDualPitchPairDropdown() {
+      const selPair = document.getElementById('selDualPitchPair');
+      if (!selPair) return;
+      selPair.innerHTML = '';
+
+      const std = AppState.standard;
+      const ser = AppState.currentSeries;
+      const models = (KETTENWULF_CATALOG[std] && KETTENWULF_CATALOG[std][ser]) ? KETTENWULF_CATALOG[std][ser] : [];
+      const model = models.find(m => m.name === AppState.currentModelName) || models[0];
+      if (!model) return;
+
+      const pairs = generatePitchPairsFromModel(model);
+
+      pairs.forEach(pair => {
+        const opt = document.createElement('option');
+        opt.value = `${pair.p1}_${pair.p2}`;
+        const recTag = pair.isRecommended ? ' ★ Chuẩn P50' : '';
+        opt.innerText = `p₁=${pair.p1} / p₂=${pair.p2} mm (Tỷ lệ ${pair.ratio.toFixed(2)})${recTag}`;
+        selPair.appendChild(opt);
+      });
+
+      const optCustom = document.createElement('option');
+      optCustom.value = 'custom';
+      optCustom.innerText = '✏️ Tùy chỉnh cặp bước phi tiêu chuẩn...';
+      selPair.appendChild(optCustom);
+
+      const currentKey = `${AppState.diff_p1}_${AppState.diff_p2}`;
+      const found = pairs.some(p => `${p.p1}_${p.p2}` === currentKey);
+
+      if (found) {
+        selPair.value = currentKey;
+      } else if (AppState.diff_p1 > 0 && AppState.diff_p2 > 0) {
+        selPair.value = 'custom';
+        const inp1 = document.getElementById('input_diff_p1');
+        if (inp1) inp1.value = AppState.diff_p1;
+        const inp2 = document.getElementById('input_diff_p2');
+        if (inp2) inp2.value = AppState.diff_p2;
+        AppState.p = Math.round((AppState.diff_p1 + AppState.diff_p2) / 2.0);
+        const numP = document.getElementById('num_p');
+        if (numP) numP.value = AppState.p;
+        const inpP = document.getElementById('input_p');
+        if (inpP) inpP.value = AppState.p;
+      } else if (pairs.length > 0) {
+        selPair.value = `${pairs[0].p1}_${pairs[0].p2}`;
+        AppState.diff_p1 = pairs[0].p1;
+        AppState.diff_p2 = pairs[0].p2;
+        AppState.p = Math.round((pairs[0].p1 + pairs[0].p2) / 2.0);
+        const inp1 = document.getElementById('input_diff_p1');
+        if (inp1) inp1.value = AppState.diff_p1;
+        const inp2 = document.getElementById('input_diff_p2');
+        if (inp2) inp2.value = AppState.diff_p2;
+        const numP = document.getElementById('num_p');
+        if (numP) numP.value = AppState.p;
+        const inpP = document.getElementById('input_p');
+        if (inpP) inpP.value = AppState.p;
+      } else {
+        selPair.value = 'custom';
+      }
+
+      applyModelParams(model);
+    }
+
+    function onDualPitchPairChange() {
+      const selPair = document.getElementById('selDualPitchPair');
+      if (!selPair) return;
+      const val = selPair.value;
+
+      if (val === 'custom') {
+        const panel = document.getElementById('panelDifferentPitch');
+        if (panel) panel.style.display = 'block';
+      } else {
+        const parts = val.split('_');
+        if (parts.length === 2) {
+          const p1 = parseFloat(parts[0]);
+          const p2 = parseFloat(parts[1]);
+          AppState.diff_p1 = p1;
+          AppState.diff_p2 = p2;
+          AppState.p = Math.round((p1 + p2) / 2.0);
+          const inp1 = document.getElementById('input_diff_p1');
+          if (inp1) inp1.value = p1;
+          const inp2 = document.getElementById('input_diff_p2');
+          if (inp2) inp2.value = p2;
+          const numP = document.getElementById('num_p');
+          if (numP) numP.value = AppState.p;
+          const inpP = document.getElementById('input_p');
+          if (inpP) inpP.value = AppState.p;
+        }
+      }
+      onParamChange();
+      updateDifferentPitchFactorsUI();
+    }
+
+    function updateDiffPitchScorecardUI() {
+      const scorecard = document.getElementById('diffPitchScorecard');
+      if (!scorecard) return;
+
+      if (!AppState.isDifferentPitch) {
+        scorecard.style.display = 'none';
+        return;
+      }
+      scorecard.style.display = 'block';
+
+      if (!CurrentGeom) return;
+
+      const p1 = AppState.diff_p1 || 80.0;
+      const p2 = AppState.diff_p2 || 120.0;
+      const d1 = AppState.d1 || 25.0;
+      const d0 = CurrentGeom.d0 || 386.92;
+      const Ra = CurrentGeom.Ra || (d0 / 2.0 + 0.4 * d1);
+      const theta1 = CurrentGeom.theta1 || (2.0 * Math.asin(p1 / d0));
+      const ds = CurrentGeom.ds || 326.8;
+
+      const half = computeHalfGapPoints(CurrentGeom, 10);
+      const tip_ang = half.tip_angle;
+      const delta_th1 = theta1 - 2.0 * tip_ang;
+      const s_k1 = Ra * delta_th1;
+      const ratio = p2 / p1;
+      const z_val = AppState.z;
+      const min_p1 = 2.2 * d1;
+
+      const condTip = (delta_th1 > 0.001 && s_k1 >= d1 * 0.10);
+      const condRatio = (ratio >= 1.15 && ratio <= 1.65);
+      const condZ = (z_val >= 4 && z_val <= 14);
+      const condMinP1 = (p1 >= min_p1);
+      const condChain = (AppState.standard === 'KWN_017' || AppState.standard === 'KWN_015');
+
+      const allPass = condTip && condRatio && condZ && condMinP1 && condChain;
+
+      scorecard.innerHTML = `
+        <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid ${allPass ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}; border-radius: 8px; padding: 7px 10px; font-size: 10px; line-height: 1.45;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 4px; margin-bottom: 6px;">
+            <span style="font-weight: 700; color: #38bdf8; text-transform: uppercase;">📊 Đánh Giá Khả Thi Đĩa Bước Kép</span>
+            <span style="font-weight: 700; font-size: 9.5px; padding: 2px 6px; border-radius: 4px; ${allPass ? 'background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.5);' : 'background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.5);'}">
+              ${allPass ? '✅ ĐẠT CHUẨN KETTENWULF P50' : '⚠️ CẦN HIỆU CHỈNH THÔNG SỐ'}
+            </span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px;">
+            <div style="color: ${condTip ? '#10b981' : '#ef4444'};">
+              ${condTip ? '✓' : '✗'} <strong>Đỉnh răng p₁:</strong> ${s_k1 > 0 ? s_k1.toFixed(1) + ' mm' : 'Nhọn (0 mm)'}
+            </div>
+            <div style="color: ${condRatio ? '#10b981' : '#f59e0b'};">
+              ${condRatio ? '✓' : '⚠️'} <strong>Tỷ lệ p₂/p₁:</strong> ${ratio.toFixed(2)} (${condRatio ? '1.15÷1.65' : 'Lệch chuẩn'})
+            </div>
+            <div style="color: ${condZ ? '#10b981' : '#f59e0b'};">
+              ${condZ ? '✓' : '⚠️'} <strong>Số răng z:</strong> ${z_val} răng (${condZ ? 'Chuẩn 4÷14' : 'Nên ≤ 14'})
+            </div>
+            <div style="color: #38bdf8;">
+              ✓ <strong>Hạ bậc thân đĩa dₛ:</strong> ${ds.toFixed(1)} mm
+            </div>
+            <div style="color: ${condMinP1 ? '#10b981' : '#ef4444'}; grid-column: span 2;">
+              ${condMinP1 ? '✓' : '✗'} <strong>Chống dính con lăn:</strong> p₁ = ${p1} mm ${condMinP1 ? '≥' : '<'} 2.2·d₁ = ${min_p1.toFixed(1)} mm
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     function populateSeriesDropdown() {
@@ -3785,7 +4288,16 @@
 
       const std = AppState.standard;
       const seriesDict = KETTENWULF_CATALOG[std] || KETTENWULF_CATALOG['KWN_017'];
-      const seriesKeys = Object.keys(seriesDict);
+      let seriesKeys = Object.keys(seriesDict);
+
+      // Bộ lọc thông minh theo mục đích ứng dụng (Application Wizard Filter)
+      if (AppState.isDifferentPitch || ['conveyor_single', 'conveyor_diff', 'conveyor_prot'].includes(AppState.appMode)) {
+        seriesKeys = seriesKeys.filter(k => !['DIN8187', 'ANSI', 'LANTERN'].includes(k));
+      } else if (AppState.appMode === 'roller_drive') {
+        seriesKeys = seriesKeys.filter(k => ['DIN8187', 'ANSI'].includes(k));
+      } else if (AppState.appMode === 'lantern') {
+        seriesKeys = seriesKeys.filter(k => k === 'LANTERN');
+      }
 
       const seriesLabels = {
         'MT': 'Dòng MT – ISO 1977 / DIN 8167 Má sâu cào vật liệu (Deep-link)',
@@ -3810,7 +4322,7 @@
 
       if (seriesKeys.includes(AppState.currentSeries)) {
         selSeries.value = AppState.currentSeries;
-      } else {
+      } else if (seriesKeys.length > 0) {
         AppState.currentSeries = seriesKeys[0];
         selSeries.value = AppState.currentSeries;
       }
@@ -3842,7 +4354,11 @@
         selModel.value = AppState.currentModelName;
       }
 
-      populatePitchDropdown();
+      if (AppState.isDifferentPitch) {
+        populateDualPitchPairDropdown();
+      } else {
+        populatePitchDropdown();
+      }
     }
 
     function populatePitchDropdown() {
@@ -4011,7 +4527,11 @@
       const models = (KETTENWULF_CATALOG[std] && KETTENWULF_CATALOG[std][ser]) ? KETTENWULF_CATALOG[std][ser] : [];
       const model = models.find(m => m.name === AppState.currentModelName) || models[0];
 
-      populatePitchDropdown();
+      if (AppState.isDifferentPitch) {
+        populateDualPitchPairDropdown();
+      } else {
+        populatePitchDropdown();
+      }
     }
 
     function onStandardPitchChange() {
@@ -4120,6 +4640,58 @@
         AppState.p = 150;
         AppState.z = 10;
       }
+
+      if (presetName === '16B-1' || presetName === 'ANSI80') {
+        AppState.appMode = 'roller_drive';
+      } else if (presetName === 'KWN016') {
+        AppState.appMode = 'lantern';
+      } else {
+        if (AppState.appMode === 'roller_drive' || AppState.appMode === 'lantern') {
+          AppState.appMode = 'conveyor_single';
+        }
+      }
+
+      ['conveyor_single', 'conveyor_diff', 'conveyor_prot', 'roller_drive', 'lantern'].forEach(m => {
+        const btn = document.getElementById('btnAppMode_' + m);
+        if (!btn) return;
+        btn.classList.remove('active', 'active-amber', 'active-emerald', 'active-purple');
+        if (m === AppState.appMode) {
+          if (m === 'conveyor_diff') btn.classList.add('active-amber');
+          else if (m === 'conveyor_prot') btn.classList.add('active-emerald');
+          else if (m === 'lantern') btn.classList.add('active-purple');
+          else btn.classList.add('active');
+        }
+      });
+      const badge = document.getElementById('appModeBadge');
+      if (badge) {
+        if (AppState.appMode === 'roller_drive') {
+          badge.innerText = '🔗 Xích con lăn (DIN/ANSI)';
+          badge.style.color = '#38bdf8';
+          badge.style.background = 'rgba(56, 189, 248, 0.15)';
+          badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        } else if (AppState.appMode === 'lantern') {
+          badge.innerText = '🔧 Đĩa chốt lồng đèn (KWN 016)';
+          badge.style.color = '#c084fc';
+          badge.style.background = 'rgba(192, 132, 252, 0.15)';
+          badge.style.borderColor = 'rgba(192, 132, 252, 0.4)';
+        } else if (AppState.appMode === 'conveyor_diff') {
+          badge.innerText = '⚡ Băng cào bước kép (P50)';
+          badge.style.color = '#fbbf24';
+          badge.style.background = 'rgba(245, 158, 11, 0.15)';
+          badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        } else if (AppState.appMode === 'conveyor_prot') {
+          badge.innerText = '🛡️ Băng cào bước bảo vệ (P51)';
+          badge.style.color = '#10b981';
+          badge.style.background = 'rgba(16, 185, 129, 0.15)';
+          badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        } else {
+          badge.innerText = '⚙️ Băng cào bước đơn';
+          badge.style.color = '#38bdf8';
+          badge.style.background = 'rgba(56, 189, 248, 0.15)';
+          badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        }
+      }
+      updateStandardDropdownState();
 
       const selStd = document.getElementById('selStandard');
       if (selStd) selStd.value = AppState.standard;
@@ -7798,9 +8370,36 @@
     function onProtectionPitchToggle() {
       const chk = document.getElementById('chkProtectionPitch');
       AppState.isProtectionPitch = chk ? chk.checked : false;
-      
+      AppState.appMode = AppState.isProtectionPitch ? 'conveyor_prot' : 'conveyor_single';
+
       const panelProt = document.getElementById('panelProtectionPitch');
       if (panelProt) panelProt.style.display = AppState.isProtectionPitch ? 'block' : 'none';
+
+      ['conveyor_single', 'conveyor_diff', 'conveyor_prot', 'roller_drive', 'lantern'].forEach(m => {
+        const btn = document.getElementById('btnAppMode_' + m);
+        if (!btn) return;
+        btn.classList.remove('active', 'active-amber', 'active-emerald', 'active-purple');
+        if (m === AppState.appMode) {
+          if (m === 'conveyor_diff') btn.classList.add('active-amber');
+          else if (m === 'conveyor_prot') btn.classList.add('active-emerald');
+          else if (m === 'lantern') btn.classList.add('active-purple');
+          else btn.classList.add('active');
+        }
+      });
+      const badge = document.getElementById('appModeBadge');
+      if (badge) {
+        if (AppState.isProtectionPitch) {
+          badge.innerText = '🛡️ Băng cào bước bảo vệ (P51)';
+          badge.style.color = '#10b981';
+          badge.style.background = 'rgba(16, 185, 129, 0.15)';
+          badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        } else {
+          badge.innerText = '⚙️ Băng cào bước đơn';
+          badge.style.color = '#38bdf8';
+          badge.style.background = 'rgba(56, 189, 248, 0.15)';
+          badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        }
+      }
 
       if (AppState.isProtectionPitch) {
         // Tắt đĩa bước thay đổi nếu đang bật để tránh xung đột
@@ -7827,6 +8426,8 @@
           desc.innerHTML = 'Phay số răng lẻ $Z = 2 \\cdot z_0$ theo bảng Catalog KettenWulf Trang 51. Răng ăn khớp luân phiên qua từng vòng, <strong>tăng gấp đôi (2×) tuổi thọ đĩa xích</strong>.';
         }
       }
+      updateStandardDropdownState();
+      populateSeriesDropdown();
       onProtectionPitchParamChange();
     }
 
@@ -7930,8 +8531,41 @@
     function onDifferentPitchToggle() {
       const chk = document.getElementById('chkDifferentPitch');
       AppState.isDifferentPitch = chk ? chk.checked : false;
+      AppState.appMode = AppState.isDifferentPitch ? 'conveyor_diff' : 'conveyor_single';
+
       const panel = document.getElementById('panelDifferentPitch');
       if (panel) panel.style.display = AppState.isDifferentPitch ? 'block' : 'none';
+
+      const groupSingle = document.getElementById('groupSinglePitch');
+      const groupDual = document.getElementById('groupDualPitch');
+      if (groupSingle) groupSingle.style.display = AppState.isDifferentPitch ? 'none' : 'block';
+      if (groupDual) groupDual.style.display = AppState.isDifferentPitch ? 'block' : 'none';
+
+      ['conveyor_single', 'conveyor_diff', 'conveyor_prot', 'roller_drive', 'lantern'].forEach(m => {
+        const btn = document.getElementById('btnAppMode_' + m);
+        if (!btn) return;
+        btn.classList.remove('active', 'active-amber', 'active-emerald', 'active-purple');
+        if (m === AppState.appMode) {
+          if (m === 'conveyor_diff') btn.classList.add('active-amber');
+          else if (m === 'conveyor_prot') btn.classList.add('active-emerald');
+          else if (m === 'lantern') btn.classList.add('active-purple');
+          else btn.classList.add('active');
+        }
+      });
+      const badge = document.getElementById('appModeBadge');
+      if (badge) {
+        if (AppState.isDifferentPitch) {
+          badge.innerText = '⚡ Băng cào bước kép (P50)';
+          badge.style.color = '#fbbf24';
+          badge.style.background = 'rgba(245, 158, 11, 0.15)';
+          badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        } else {
+          badge.innerText = '⚙️ Băng cào bước đơn';
+          badge.style.color = '#38bdf8';
+          badge.style.background = 'rgba(56, 189, 248, 0.15)';
+          badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        }
+      }
 
       if (AppState.isDifferentPitch) {
         // Tắt đĩa bước bảo vệ nếu đang bật
@@ -7970,6 +8604,8 @@
           syncDifferentPitchConstrained('p1');
         }
       }
+      updateStandardDropdownState();
+      populateSeriesDropdown();
       onParamChange();
       updateDifferentPitchFactorsUI();
     }
@@ -8005,8 +8641,30 @@
       const chk = document.getElementById('chkDifferentPitch');
       if (chk) chk.checked = true;
       AppState.isDifferentPitch = true;
+      AppState.appMode = 'conveyor_diff';
       const panel = document.getElementById('panelDifferentPitch');
       if (panel) panel.style.display = 'block';
+
+      const groupSingle = document.getElementById('groupSinglePitch');
+      const groupDual = document.getElementById('groupDualPitch');
+      if (groupSingle) groupSingle.style.display = 'none';
+      if (groupDual) groupDual.style.display = 'block';
+
+      ['conveyor_single', 'conveyor_diff', 'conveyor_prot', 'roller_drive', 'lantern'].forEach(m => {
+        const btn = document.getElementById('btnAppMode_' + m);
+        if (!btn) return;
+        btn.classList.remove('active', 'active-amber', 'active-emerald', 'active-purple');
+        if (m === AppState.appMode) {
+          btn.classList.add('active-amber');
+        }
+      });
+      const badge = document.getElementById('appModeBadge');
+      if (badge) {
+        badge.innerText = '⚡ Băng cào bước kép (P50)';
+        badge.style.color = '#fbbf24';
+        badge.style.background = 'rgba(245, 158, 11, 0.15)';
+        badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+      }
 
       AppState.diffAutoConstrain = true;
       const chkConstrain = document.getElementById('chkDiffAutoConstrain');
@@ -8157,6 +8815,7 @@
         <span style="color:#fbbf24;">d₀ = n · √((p₁ + p₂)² - f · p₁ · p₂) = <strong>${d0.toFixed(2)} mm</strong></span>
         ${validHtml}
       `;
+      updateDiffPitchScorecardUI();
     }
 
     function onHubCatalogChange() {
