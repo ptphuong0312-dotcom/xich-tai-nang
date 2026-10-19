@@ -4430,18 +4430,10 @@
         else da = d0 + 0.8 * d1;
 
         if (standard === 'KWN_017') {
-          if (AppState.isDifferentPitch && theta1_val) {
-            const z_eff = (2.0 * Math.PI) / theta1_val;
-            if (z_eff <= 11) beta_deg = 74.0;
-            else if (z_eff <= 29) beta_deg = 56.0;
-            else beta_deg = 38.0;
-            gamma_deg = (beta_deg / 2.0) - (180.0 / z_eff);
-          } else {
-            if (z <= 11) beta_deg = 74.0;
-            else if (z <= 29) beta_deg = 56.0;
-            else beta_deg = 38.0;
-            gamma_deg = (beta_deg / 2.0) - (180.0 / z);
-          }
+          if (z <= 11) beta_deg = 74.0;
+          else if (z <= 29) beta_deg = 56.0;
+          else beta_deg = 38.0;
+          gamma_deg = (beta_deg / 2.0) - (180.0 / z);
         } else {
           gamma_deg = gammaCustom;
           beta_deg = (alpha_deg / 2.0 + gamma_deg) * 2.0;
@@ -5064,8 +5056,8 @@
       let P3 = d1_sq < d2_sq ? int1 : int2;
 
       // KIỂM SOÁT ĐỈNH RĂNG TUYỆT ĐỐI CHỐNG XUYÊN THÂN RĂNG / MÓNG VUỐT:
-      // Trục đối xứng thân răng nằm tại góc cực half_alpha = alpha_rad / 2
-      const half_alpha = alpha_rad / 2.0;
+      // Trục đối xứng thân răng nằm tại góc cực half_alpha:
+      const half_alpha = (geom.isDifferentPitch && geom.theta1) ? (geom.theta1 / 2.0) : (alpha_rad / 2.0);
       const sin_ha = Math.sin(half_alpha);
       const cos_ha = Math.cos(half_alpha);
       const B_sym = -2.0 * (C2.x * sin_ha + C2.y * cos_ha);
@@ -5223,15 +5215,28 @@
           full_pts.push(polar_ccw(pt.r, psi_k + theta1 - pt.xi));
         }
 
-        // 4. Vành chuyển tiếp trơn tru tại bán kính chân răng Rf qua bước lớn p2 (Catalog KettenWulf P50 Hình 1):
-        // Lưu ý: ds là đường kính hạ bậc thân đĩa (Section View / Base Circle nét đứt) để má xích không cấn hông,
-        // còn chu vi đỉnh vành đĩa nối giữa 2 hốc con lăn chạy êm ái trên bán kính đáy hốc Rf (không khoét rãnh sâu).
+        // --- TOOTH 2 (Pitch p2) - ĐỈNH RĂNG BƯỚC LỚN p2 (Catalog KettenWulf P50 Hình 1) ---
         const psi_B = psi_k + theta1;
-        const psi_next_A = psi_k + tc;
-        const n_bridge = 16;
-        for (let i = 1; i < n_bridge; i++) {
-          const psi = psi_B + (psi_next_A - psi_B) * (i / n_bridge);
-          full_pts.push(polar_ccw(Rf, psi));
+
+        // 4. Sườn trái răng p2 (từ hốc B đi lên đỉnh Ra):
+        for (let i = 0; i < flank_polar.length; i++) {
+          const pt = flank_polar[i];
+          full_pts.push(polar_ccw(pt.r, psi_B + pt.xi));
+        }
+
+        // 5. Đỉnh răng tròn Ra của bước lớn p2 (chạy dọc theo cung đỉnh Ra):
+        const ang_start2 = psi_B + last_xi;
+        const ang_end2 = psi_B + theta2 - last_xi;
+        const n_c2 = Math.max(6, Math.ceil((ang_end2 - ang_start2) * (180 / Math.PI)));
+        for (let i = 1; i < n_c2; i++) {
+          const psi = ang_start2 + (ang_end2 - ang_start2) * (i / n_c2);
+          full_pts.push(polar_ccw(Ra, psi));
+        }
+
+        // 6. Sườn phải răng p2 (hạ xuống hốc A của cặp răng tiếp theo tại psi_k + tc):
+        for (let i = flank_polar.length - 1; i >= 0; i--) {
+          const pt = flank_polar[i];
+          full_pts.push(polar_ccw(pt.r, psi_B + theta2 - pt.xi));
         }
       }
 
@@ -5882,8 +5887,11 @@
 
     // 2. CHẾ ĐỘ 2: CHI TIẾT HỐC RĂNG CHUẨN XÁC HOÀN CHỈNH (THEO CHUẨN KETTENWULF KWN 017 TRANG 48)
     function renderGapView(g, showDims, showSim) {
-      const { Rf, Ra, R0, Rs, r4, u, r1, h3, r2, beta_deg, gamma_deg, half_beta, alpha_rad, alpha_deg, d1, p, standard, X_deg } = CurrentGeom;
-      const half_alpha = alpha_rad / 2.0;
+      const { Rf, Ra, R0, Rs, r4, u, r1, h3, r2, beta_deg, gamma_deg, half_beta, alpha_rad, alpha_deg, d1, p, standard, X_deg, isDifferentPitch, theta1, theta2, p1, p2 } = CurrentGeom;
+      const isDiff = !!(isDifferentPitch && theta1 && theta2);
+      const ang_L = isDiff ? theta2 : alpha_rad;
+      const ang_R = isDiff ? theta1 : alpha_rad;
+      const half_alpha = isDiff ? (theta1 / 2.0) : (alpha_rad / 2.0);
 
       // Tỷ lệ kích thước và chữ kỹ thuật co giãn tỷ lệ chuẩn theo bước xích và hốc răng
       const S_gap = Math.max(p, d1 * 2.2);
@@ -5904,39 +5912,43 @@
       });
 
       // Tạo đường bao khép kín cung vành răng (Gồm rãnh trung tâm + 2 răng + 2 rãnh bên + vành trong Rs)
-      const span = alpha_rad * 1.35;
+      const span_L = ang_L * 1.35;
+      const span_R = ang_R * (isDiff ? 1.4 : 1.35);
       const steps = 8;
       const pts_sector = [];
 
       for (let i = 0; i < steps; i++) {
-        const th = -span + ((-alpha_rad - tip_angle) - (-span)) * (i / steps);
+        const th = -span_L + ((-ang_L - tip_angle) - (-span_L)) * (i / steps);
         pts_sector.push({ x: Ra * Math.sin(th), y: Ra * Math.cos(th) });
       }
       for (const pt of single_gap) {
-        pts_sector.push(rotate_pt(pt, -alpha_rad));
+        pts_sector.push(rotate_pt(pt, -ang_L));
       }
-      for (let i = 1; i < steps; i++) {
-        const th = (-alpha_rad + tip_angle) + ((-tip_angle) - (-alpha_rad + tip_angle)) * (i / steps);
+      const n_cL = Math.max(steps, Math.ceil(Math.abs(-tip_angle - (-ang_L + tip_angle)) * (180 / Math.PI) / 3));
+      for (let i = 1; i < n_cL; i++) {
+        const th = (-ang_L + tip_angle) + ((-tip_angle) - (-ang_L + tip_angle)) * (i / n_cL);
         pts_sector.push({ x: Ra * Math.sin(th), y: Ra * Math.cos(th) });
       }
       for (const pt of single_gap) {
         pts_sector.push(pt);
       }
-      for (let i = 1; i < steps; i++) {
-        const th = tip_angle + ((alpha_rad - tip_angle) - tip_angle) * (i / steps);
+      const n_cR = Math.max(steps, Math.ceil(Math.abs((ang_R - tip_angle) - tip_angle) * (180 / Math.PI) / 3));
+      for (let i = 1; i < n_cR; i++) {
+        const th = tip_angle + ((ang_R - tip_angle) - tip_angle) * (i / n_cR);
         pts_sector.push({ x: Ra * Math.sin(th), y: Ra * Math.cos(th) });
       }
       for (const pt of single_gap) {
-        pts_sector.push(rotate_pt(pt, alpha_rad));
+        pts_sector.push(rotate_pt(pt, ang_R));
       }
       for (let i = 1; i <= steps; i++) {
-        const th = (alpha_rad + tip_angle) + (span - (alpha_rad + tip_angle)) * (i / steps);
+        const th = (ang_R + tip_angle) + (span_R - (ang_R + tip_angle)) * (i / steps);
         pts_sector.push({ x: Ra * Math.sin(th), y: Ra * Math.cos(th) });
       }
 
       const R_inner = Rs > 0 ? Rs : (Rf - S_gap * 0.32);
-      for (let i = 0; i <= steps * 4; i++) {
-        const th = span - (2 * span) * (i / (steps * 4));
+      const steps_in = Math.max(steps * 4, 24);
+      for (let i = 0; i <= steps_in; i++) {
+        const th = span_R - (span_R - (-span_L)) * (i / steps_in);
         pts_sector.push({ x: R_inner * Math.sin(th), y: R_inner * Math.cos(th) });
       }
 
@@ -6023,13 +6035,23 @@
       }
 
       // Các đường bao phụ trợ đỉnh và rãnh bên (nét mảnh kỹ thuật)
+      const arcRef = (r, stroke, dash) => {
+        const x1 = (-r * Math.sin(span_L)).toFixed(2);
+        const y1 = (-r * Math.cos(span_L)).toFixed(2);
+        const x2 = (r * Math.sin(span_R)).toFixed(2);
+        const y2 = (-r * Math.cos(span_R)).toFixed(2);
+        return `<path d="M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}" fill="none" stroke="${stroke}" stroke-width="0.5" vector-effect="non-scaling-stroke" stroke-dasharray="${dash}"/>`;
+      };
+
       g.innerHTML += `
         <!-- Vành đỉnh da -->
-        <path d="M ${(-Ra * Math.sin(span)).toFixed(2)} ${(-Ra * Math.cos(span)).toFixed(2)} A ${Ra} ${Ra} 0 0 1 ${(Ra * Math.sin(span)).toFixed(2)} ${(-Ra * Math.cos(span)).toFixed(2)}" fill="none" stroke="#7c3aed" stroke-width="0.5" vector-effect="non-scaling-stroke" stroke-dasharray="8,4,2,4"/>
+        ${arcRef(Ra, '#7c3aed', '8,4,2,4')}
         <!-- Vòng chia d0 -->
-        <path d="M ${(-R0 * Math.sin(span)).toFixed(2)} ${(-R0 * Math.cos(span)).toFixed(2)} A ${R0} ${R0} 0 0 1 ${(R0 * Math.sin(span)).toFixed(2)} ${(-R0 * Math.cos(span)).toFixed(2)}" fill="none" stroke="#0284c7" stroke-width="0.5" vector-effect="non-scaling-stroke" stroke-dasharray="10,3,2,3"/>
+        ${arcRef(R0, '#0284c7', '10,3,2,3')}
         <!-- Vòng chân df -->
-        <path d="M ${(-Rf * Math.sin(span)).toFixed(2)} ${(-Rf * Math.cos(span)).toFixed(2)} A ${Rf} ${Rf} 0 0 1 ${(Rf * Math.sin(span)).toFixed(2)} ${(-Rf * Math.cos(span)).toFixed(2)}" fill="none" stroke="#dc2626" stroke-width="0.5" vector-effect="non-scaling-stroke" stroke-dasharray="6,3"/>
+        ${arcRef(Rf, '#dc2626', '6,3')}
+        <!-- Vành hạ bậc ds (nếu có) -->
+        ${Rs > 0 ? arcRef(Rs, '#eab308', '4,4') : ''}
         <!-- Trục tâm hốc răng OY -->
         <line x1="0" y1="${-R_inner - textSz * 2}" x2="0" y2="${-Ra - S_gap * 0.35}" stroke="#0284c7" stroke-width="0.5" vector-effect="non-scaling-stroke" stroke-dasharray="12,3,2,3"/>
       `;
@@ -6043,16 +6065,47 @@
         const colRollerCross = isLight ? '#0f172a' : '#38bdf8';
         const colRollerDimText = isLight ? '#0f172a' : '#f1f5f9';
         g.innerHTML += `
-          <!-- Vòng tròn tiếp xúc con lăn d1 -->
+          <!-- Vòng tròn tiếp xúc con lăn d1 trung tâm -->
           <circle cx="0" cy="${roller_y.toFixed(2)}" r="${roller_r.toFixed(2)}" fill="${colRollerFill}" stroke="${colRollerBorder}" stroke-width="0.7" vector-effect="non-scaling-stroke"/>
           <line x1="-${textSz * 0.8}" y1="${roller_y}" x2="${textSz * 0.8}" y2="${roller_y}" stroke="${colRollerCross}" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
           <line x1="0" y1="${roller_y - textSz * 0.8}" x2="0" y2="${roller_y + textSz * 0.8}" stroke="${colRollerCross}" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
         `;
+
+        if (isDiff) {
+          // Con lăn bên trái (hốc bước lớn p2 tại -ang_L)
+          const rL_x = -R0 * Math.sin(ang_L);
+          const rL_y = -R0 * Math.cos(ang_L);
+          g.innerHTML += `
+            <circle cx="${rL_x.toFixed(2)}" cy="${rL_y.toFixed(2)}" r="${roller_r.toFixed(2)}" fill="${colRollerFill}" stroke="${colRollerBorder}" stroke-width="0.7" vector-effect="non-scaling-stroke"/>
+            <line x1="${(rL_x - textSz * 0.8).toFixed(2)}" y1="${rL_y.toFixed(2)}" x2="${(rL_x + textSz * 0.8).toFixed(2)}" y2="${rL_y.toFixed(2)}" stroke="${colRollerCross}" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+            <line x1="${rL_x.toFixed(2)}" y1="${(rL_y - textSz * 0.8).toFixed(2)}" x2="${rL_x.toFixed(2)}" y2="${(rL_y + textSz * 0.8).toFixed(2)}" stroke="${colRollerCross}" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+          `;
+
+          // Con lăn bên phải (hốc bước nhỏ p1 tại +ang_R)
+          const rR_x = R0 * Math.sin(ang_R);
+          const rR_y = -R0 * Math.cos(ang_R);
+          g.innerHTML += `
+            <circle cx="${rR_x.toFixed(2)}" cy="${rR_y.toFixed(2)}" r="${roller_r.toFixed(2)}" fill="${colRollerFill}" stroke="${colRollerBorder}" stroke-width="0.7" vector-effect="non-scaling-stroke"/>
+            <line x1="${(rR_x - textSz * 0.8).toFixed(2)}" y1="${rR_y.toFixed(2)}" x2="${(rR_x + textSz * 0.8).toFixed(2)}" y2="${rR_y.toFixed(2)}" stroke="${colRollerCross}" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+            <line x1="${rR_x.toFixed(2)}" y1="${(rR_y - textSz * 0.8).toFixed(2)}" x2="${rR_x.toFixed(2)}" y2="${(rR_y + textSz * 0.8).toFixed(2)}" stroke="${colRollerCross}" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+          `;
+
+          // Chú thích rõ bước xích p1 và p2 trên đỉnh mỗi răng bằng đường chỉ dẫn Leader kỹ thuật AutoCAD
+          const t1_x = Ra * Math.sin(ang_R / 2.0);
+          const t1_y = -Ra * Math.cos(ang_R / 2.0);
+          g.innerHTML += cadLeaderDim(t1_x, t1_y, 25, S_gap * 0.28, textSz * 8.5, `Răng p1 = ${(p1 || p).toFixed(0)} mm (θ1 = ${(ang_R * 180 / Math.PI).toFixed(1)}°)`, isLight ? '#0284c7' : '#38bdf8', arrowSz, textSz * 0.9);
+
+          const t2_x = -Ra * Math.sin(ang_L / 2.0);
+          const t2_y = -Ra * Math.cos(ang_L / 2.0);
+          g.innerHTML += cadLeaderDim(t2_x, t2_y, 155, S_gap * 0.32, textSz * 8.5, `Răng p2 = ${(p2 || p).toFixed(0)} mm (θ2 = ${(ang_L * 180 / Math.PI).toFixed(1)}°)`, isLight ? '#d97706' : '#fbbf24', arrowSz, textSz * 0.9);
+        }
+
         const contactLbl = (standard === 'KWN_001' || AppState.chainType === 'with_roller') ? `Ø d1 = ${d1.toFixed(2)} mm (Con lăn)` : (standard === 'KWN_016' ? `Ø d1 = ${d1.toFixed(2)} mm (Chốt lồng đèn)` : `Ø d3 = ${d1.toFixed(2)} mm (Ống lót)`);
-        // Đặt điểm tiếp xúc ở đỉnh trên con lăn và hướng leader góc 115° với cổ dài hơn để tách biệt hoàn toàn lên phía trên r2:
+        // Đặt điểm tiếp xúc ở đỉnh trên con lăn và hướng leader góc 105° (hoặc 115°) với cổ dài hơn để tách biệt hoàn toàn lên phía trên:
         const roll_touch_x = -roller_r * 0.42;
         const roll_touch_y = roller_y - roller_r * 0.91;
-        g.innerHTML += cadLeaderDim(roll_touch_x, roll_touch_y, 115, S_gap * 0.28, textSz * 5.2, contactLbl, colRollerDimText, arrowSz, textSz);
+        const roll_angle = isDiff ? 105 : 115;
+        g.innerHTML += cadLeaderDim(roll_touch_x, roll_touch_y, roll_angle, S_gap * 0.28, textSz * 5.2, contactLbl, colRollerDimText, arrowSz, textSz);
 
         // ĐỐI VỚI TIÊU CHUẨN KWN 016: DÓNG RÕ KHE HỞ ĐÁY RÃNH CHỐT c = 0.15·m (TRÁNH HIỂU NHẦM LƠ LỬNG)
         if (standard === 'KWN_016') {
@@ -6197,7 +6250,7 @@
         // F. [MÀU CAM #ea580c] GÓC SƯỜN γ THEO CHUẨN CATALOG KETTENWULF (TRANG 47 & 48)
         // γ là góc hợp bởi đường thẳng kéo dài từ sườn h3 (góc half_beta) và đường thẳng tâm răng (màu xanh nét gạch qua tâm răng).
         if (standard !== 'KWN_001') {
-          const gamma_val = CurrentGeom.gamma_deg;
+          const gamma_val = isDiff ? ((beta_deg / 2.0) - (ang_R * 180.0 / Math.PI / 2.0)) : CurrentGeom.gamma_deg;
           const gamma_rad = (gamma_val * Math.PI) / 180.0;
 
           // 1. Điểm giao ảo Apex I giữa đường kéo dài sườn h3 và trục tâm răng qua tâm O:
@@ -6246,11 +6299,16 @@
       }
 
       // Khung hình quan sát cân đối bao trọn rãnh trung tâm và 2 răng
-      const w_view = S_gap * 3.4;
-      const h_view = (Ra - R_inner) + S_gap * 0.85;
-      const y_top = -(Ra + S_gap * 0.40);
-      document.getElementById('cadSvg').setAttribute('viewBox', `${-w_view/2} ${y_top} ${w_view} ${h_view}`);
-      document.getElementById('hudStatus').innerText = `Hốc răng chuẩn KettenWulf ${standard} | β: ${beta_deg.toFixed(1)}° | r1: R${r1.toFixed(2)} | r2: R${r2.toFixed(1)}`;
+      const x_min = -Ra * Math.sin(span_L) - S_gap * 0.2;
+      const x_max = Ra * Math.sin(span_R) + S_gap * 0.2;
+      const w_view = Math.max(S_gap * 3.4, (x_max - x_min) * 1.15);
+      const h_view = (Ra - R_inner) + S_gap * 0.95;
+      const y_top = -(Ra + S_gap * 0.45);
+      const x_left = -(w_view / 2.0);
+      document.getElementById('cadSvg').setAttribute('viewBox', `${x_left.toFixed(1)} ${y_top.toFixed(1)} ${w_view.toFixed(1)} ${h_view.toFixed(1)}`);
+      document.getElementById('hudStatus').innerText = isDiff
+        ? `Hốc răng bước thay đổi KettenWulf P50 | p1=${p1 || p}mm (θ1=${(ang_R * 180 / Math.PI).toFixed(1)}°) | p2=${p2 || p}mm (θ2=${(ang_L * 180 / Math.PI).toFixed(1)}°) | β: ${beta_deg.toFixed(1)}°`
+        : `Hốc răng chuẩn KettenWulf ${standard} | β: ${beta_deg.toFixed(1)}° | r1: R${r1.toFixed(2)} | r2: R${r2.toFixed(1)}`;
     }
 
     function renderSectionView(g, showDims) {
@@ -6999,7 +7057,11 @@
         const S_gap = Ra - Rf;
 
         // 1. Thân vành đĩa xích (GAP_RIM_BODY - Màu 8 Grey hoặc 7 White)
-        const span = Math.min(Math.PI * 0.48, alpha_rad * 1.55);
+        const isDiff = !!(geom.isDifferentPitch && geom.theta1 && geom.theta2);
+        const ang_L = isDiff ? geom.theta2 : alpha_rad;
+        const ang_R = isDiff ? geom.theta1 : alpha_rad;
+        const span_L = Math.min(Math.PI * 0.48, ang_L * 1.55);
+        const span_R = Math.min(Math.PI * 0.48, ang_R * (isDiff ? 1.6 : 1.55));
         const steps = 36; // Cung tròn đỉnh và đáy hốc răng mịn mượt tuyệt đối
         const single_gap = [];
         for (let i = pts_half.length - 1; i >= 1; i--) {
@@ -7016,35 +7078,35 @@
 
         const pts_sector = [];
         for (let i = 0; i < steps; i++) {
-          const th = -span + ((-alpha_rad - tip_angle) - (-span)) * (i / steps);
+          const th = -span_L + ((-ang_L - tip_angle) - (-span_L)) * (i / steps);
           pts_sector.push({ x: ox + Ra * Math.sin(th), y: oy + Ra * Math.cos(th) });
         }
         for (const pt of single_gap) {
-          const rpt = rotate_pt(pt, -alpha_rad);
+          const rpt = rotate_pt(pt, -ang_L);
           pts_sector.push({ x: ox + rpt.x, y: oy + rpt.y });
         }
         for (let i = 1; i < steps; i++) {
-          const th = (-alpha_rad + tip_angle) + ((-tip_angle) - (-alpha_rad + tip_angle)) * (i / steps);
+          const th = (-ang_L + tip_angle) + ((-tip_angle) - (-ang_L + tip_angle)) * (i / steps);
           pts_sector.push({ x: ox + Ra * Math.sin(th), y: oy + Ra * Math.cos(th) });
         }
         for (const pt of single_gap) {
           pts_sector.push({ x: ox + pt.x, y: oy + pt.y });
         }
         for (let i = 1; i < steps; i++) {
-          const th = tip_angle + ((alpha_rad - tip_angle) - tip_angle) * (i / steps);
+          const th = tip_angle + ((ang_R - tip_angle) - tip_angle) * (i / steps);
           pts_sector.push({ x: ox + Ra * Math.sin(th), y: oy + Ra * Math.cos(th) });
         }
         for (const pt of single_gap) {
-          const rpt = rotate_pt(pt, alpha_rad);
+          const rpt = rotate_pt(pt, ang_R);
           pts_sector.push({ x: ox + rpt.x, y: oy + rpt.y });
         }
         for (let i = 1; i <= steps; i++) {
-          const th = (alpha_rad + tip_angle) + (span - (alpha_rad + tip_angle)) * (i / steps);
+          const th = (ang_R + tip_angle) + (span_R - (ang_R + tip_angle)) * (i / steps);
           pts_sector.push({ x: ox + Ra * Math.sin(th), y: oy + Ra * Math.cos(th) });
         }
         const R_inner = Rs > 0 ? Rs : (Rf - S_gap * 0.32);
         for (let i = 0; i <= steps * 4; i++) {
-          const th = span - (2 * span) * (i / (steps * 4));
+          const th = span_R - (span_R - (-span_L)) * (i / (steps * 4));
           pts_sector.push({ x: ox + R_inner * Math.sin(th), y: oy + R_inner * Math.cos(th) });
         }
         addPolyline(pts_sector, 'GAP_RIM_BODY', true);
