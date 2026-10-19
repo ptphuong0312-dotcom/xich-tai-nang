@@ -871,14 +871,24 @@
               Dành cho xích tải có bước mắt xích luân phiên $p_1$ và $p_2$ khác nhau (Catalog KettenWulf P50). 1 răng đĩa tương ứng 1 chu kỳ kép $(p_1 + p_2)$ gồm 1 răng nhô hẹp tại bước $p_1$ và 1 răng nhô rộng tại bước $p_2$.
             </div>
             <div id="panelDifferentPitch" style="display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(245, 158, 11, 0.25);">
+              
+              <!-- DẤU TÍCH KHÓA KHUÔN KHỔ THIẾT KẾ CHUẨN (AUTO-CONSTRAIN) -->
+              <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 5px; padding: 4px 6px; background: rgba(56, 189, 248, 0.08); border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.25);">
+                <span style="font-size: 10px; font-weight: 600; color: #38bdf8;">🔒 Khóa tỷ lệ chuẩn thiết kế (Auto-Constrain)</span>
+                <input type="checkbox" id="chkDiffAutoConstrain" checked onchange="onDiffAutoConstrainToggle()" style="cursor: pointer; width: 14px; height: 14px; accent-color: #38bdf8;">
+              </label>
+              <div id="descDiffAutoConstrain" style="font-size: 9px; color: #94a3b8; margin-bottom: 6px; line-height: 1.35;">
+                <span style="color: #38bdf8; font-weight: 600;">✓ Đang khóa:</span> Thay đổi bước p₁ sẽ tự động đồng bộ p₂ = 1.5·p₁, đỉnh răng luôn giữ chuẩn độ bền, không nhọn. Bỏ tích để tự do tùy chỉnh thông số kèm cảnh báo kỹ thuật.
+              </div>
+
               <div class="grid-2">
                 <div>
                   <label style="font-size: 10px; color: #fbbf24; font-weight: 600;">Bước nhỏ p1 (mm):</label>
-                  <input type="number" id="input_diff_p1" value="80" step="1" min="10" max="1000" oninput="onDifferentPitchParamChange()" style="width: 100%; padding: 3px 6px; font-size: 11px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color);">
+                  <input type="number" id="input_diff_p1" value="80" step="1" min="10" max="1000" oninput="onDifferentPitchParamChange('p1')" style="width: 100%; padding: 3px 6px; font-size: 11px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color);">
                 </div>
                 <div>
                   <label style="font-size: 10px; color: #fbbf24; font-weight: 600;">Bước lớn p2 (mm):</label>
-                  <input type="number" id="input_diff_p2" value="120" step="1" min="10" max="1000" oninput="onDifferentPitchParamChange()" style="width: 100%; padding: 3px 6px; font-size: 11px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color);">
+                  <input type="number" id="input_diff_p2" value="120" step="1" min="10" max="1000" oninput="onDifferentPitchParamChange('p2')" style="width: 100%; padding: 3px 6px; font-size: 11px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color);">
                 </div>
               </div>
               <button type="button" onclick="loadKettenwulfP50Preset()" style="width: 100%; margin-top: 5px; padding: 4px 8px; font-size: 10px; font-weight: 600; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
@@ -3669,6 +3679,7 @@
       hubType: 'Type_C',
       isProtectionPitch: false, // Chế độ đĩa xích bước bảo vệ (Protection pitch / Hunting tooth - Trang 51)
       isDifferentPitch: false,  // Chế độ đĩa xích bước thay đổi (Different pitches - Trang 50)
+      diffAutoConstrain: true,  // Khóa thiết kế trong khuôn khổ chuẩn (Auto-Constrain)
       diff_p1: 80.0,            // Bước nhỏ p1 (mm)
       diff_p2: 120.0,           // Bước lớn p2 (mm)
       d8: 0.0,          // Lỗ rỗng trong chốt xích (cho dòng MC)
@@ -4187,7 +4198,8 @@
         }
       } else if (param === 'z') {
         const val = parseInt(document.getElementById('num_z').value);
-        if (!isNaN(val) && val >= 5) {
+        const minZ = AppState.isDifferentPitch ? 4 : 5;
+        if (!isNaN(val) && val >= minZ) {
           AppState.z = val;
           const inp = document.getElementById('input_z');
           if (inp) {
@@ -4208,9 +4220,17 @@
           }
         }
       }
+      if (AppState.isDifferentPitch) {
+        if (AppState.diffAutoConstrain) {
+          syncDifferentPitchConstrained(param);
+        }
+      }
       recalculateGeom();
       recalculateKeyStrength();
       renderCAD();
+      if (AppState.isDifferentPitch) {
+        updateDifferentPitchFactorsUI();
+      }
     }
 
     function onSliderParamChange(param) {
@@ -4230,9 +4250,17 @@
         const num = document.getElementById('num_d1');
         if (num) num.value = (val % 1 === 0 ? val.toFixed(0) : val.toFixed(2));
       }
+      if (AppState.isDifferentPitch) {
+        if (AppState.diffAutoConstrain) {
+          syncDifferentPitchConstrained(param);
+        }
+      }
       recalculateGeom();
       recalculateKeyStrength();
       renderCAD();
+      if (AppState.isDifferentPitch) {
+        updateDifferentPitchFactorsUI();
+      }
     }
 
     function onSimSpeedSliderChange() {
@@ -4286,6 +4314,10 @@
         AppState.d1 = parseFloat(document.getElementById('input_d1').value) || AppState.d1;
       }
 
+      if (AppState.isDifferentPitch && AppState.diffAutoConstrain) {
+        syncDifferentPitchConstrained('p1');
+      }
+
       if (document.getElementById('input_b1')) AppState.b1 = parseFloat(document.getElementById('input_b1').value);
       if (document.getElementById('input_g')) AppState.g = parseFloat(document.getElementById('input_g').value);
       if (document.getElementById('input_r4')) AppState.r4 = parseFloat(document.getElementById('input_r4').value);
@@ -4313,6 +4345,9 @@
       recalculateGeom();
       recalculateKeyStrength();
       renderCAD();
+      if (AppState.isDifferentPitch) {
+        updateDifferentPitchFactorsUI();
+      }
     }
 
     function onShaftParamChange() {
@@ -7811,6 +7846,87 @@
       }
     }
 
+    function onDiffAutoConstrainToggle() {
+      const chk = document.getElementById('chkDiffAutoConstrain');
+      AppState.diffAutoConstrain = chk ? chk.checked : true;
+      const desc = document.getElementById('descDiffAutoConstrain');
+      if (desc) {
+        if (AppState.diffAutoConstrain) {
+          desc.innerHTML = '<span style="color: #38bdf8; font-weight: 600;">🔒 Đang khóa khuôn khổ:</span> Tự động đồng bộ p₂ = 1.5·p₁, p₁ ≥ 2.2·d₁, đỉnh răng luôn giữ chuẩn độ bền, không bị nhọn/móng vuốt.';
+        } else {
+          desc.innerHTML = '<span style="color: #f59e0b; font-weight: 600;">🔓 Chế độ tùy chỉnh tự do:</span> Bạn có thể tùy biến bất kỳ thông số p₁, p₂, z, d₁ nào. Hệ thống sẽ phát cảnh báo kỹ thuật tức thời nếu vi phạm tiêu chuẩn.';
+        }
+      }
+      if (AppState.diffAutoConstrain) {
+        syncDifferentPitchConstrained('p1');
+        onParamChange();
+      }
+      updateDifferentPitchFactorsUI();
+    }
+
+    function syncDifferentPitchConstrained(source) {
+      if (!AppState.isDifferentPitch || !AppState.diffAutoConstrain) return;
+
+      const d1 = AppState.d1 || 25.0;
+      const min_p1 = Math.round(2.2 * d1);
+
+      if (source === 'p1') {
+        let p1 = Math.max(5.0, AppState.diff_p1 || 80.0);
+        if (p1 < min_p1) p1 = min_p1;
+        const p2 = Math.round(1.5 * p1);
+        AppState.diff_p1 = p1;
+        AppState.diff_p2 = p2;
+        AppState.p = Math.round((p1 + p2) / 2.0);
+      } else if (source === 'p2') {
+        let p2 = Math.max(10.0, AppState.diff_p2 || 120.0);
+        let p1 = Math.round(p2 / 1.5);
+        if (p1 < min_p1) {
+          p1 = min_p1;
+          p2 = Math.round(1.5 * p1);
+        }
+        AppState.diff_p1 = p1;
+        AppState.diff_p2 = p2;
+        AppState.p = Math.round((p1 + p2) / 2.0);
+      } else if (source === 'p') {
+        let p = AppState.p || 100.0;
+        let p1 = Math.round(p * 0.8);
+        if (p1 < min_p1) p1 = min_p1;
+        let p2 = Math.round(1.5 * p1);
+        AppState.diff_p1 = p1;
+        AppState.diff_p2 = p2;
+        AppState.p = Math.round((p1 + p2) / 2.0);
+      } else if (source === 'd1') {
+        let p1 = AppState.diff_p1 || 80.0;
+        if (p1 < min_p1) {
+          p1 = min_p1;
+          const p2 = Math.round(1.5 * p1);
+          AppState.diff_p1 = p1;
+          AppState.diff_p2 = p2;
+          AppState.p = Math.round((p1 + p2) / 2.0);
+        }
+      } else if (source === 'z') {
+        if (AppState.z > 14) {
+          AppState.z = 12;
+        } else if (AppState.z < 4) {
+          AppState.z = 4;
+        }
+      }
+
+      // Cập nhật lại giá trị hiển thị trên các ô input
+      const inp1 = document.getElementById('input_diff_p1');
+      if (inp1 && document.activeElement !== inp1) inp1.value = AppState.diff_p1;
+      const inp2 = document.getElementById('input_diff_p2');
+      if (inp2 && document.activeElement !== inp2) inp2.value = AppState.diff_p2;
+      const numP = document.getElementById('num_p');
+      if (numP && document.activeElement !== numP) numP.value = AppState.p;
+      const inpP = document.getElementById('input_p');
+      if (inpP && document.activeElement !== inpP) inpP.value = AppState.p;
+      const numZ = document.getElementById('num_z');
+      if (numZ && document.activeElement !== numZ) numZ.value = AppState.z;
+      const inpZ = document.getElementById('input_z');
+      if (inpZ && document.activeElement !== inpZ) inpZ.value = AppState.z;
+    }
+
     function onDifferentPitchToggle() {
       const chk = document.getElementById('chkDifferentPitch');
       AppState.isDifferentPitch = chk ? chk.checked : false;
@@ -7826,6 +7942,10 @@
         if (panelProt) panelProt.style.display = 'none';
         const descProt = document.getElementById('descProtectionPitch');
         if (descProt) descProt.innerHTML = 'Phay số răng lẻ $Z = 2 \\cdot z_0$ theo bảng Catalog KettenWulf Trang 51. Răng ăn khớp luân phiên qua từng vòng, <strong>tăng gấp đôi (2×) tuổi thọ đĩa xích</strong>.';
+
+        const chkConstrain = document.getElementById('chkDiffAutoConstrain');
+        if (chkConstrain) chkConstrain.checked = AppState.diffAutoConstrain !== false;
+        AppState.diffAutoConstrain = chkConstrain ? chkConstrain.checked : true;
 
         const inp1 = document.getElementById('input_diff_p1');
         const inp2 = document.getElementById('input_diff_p2');
@@ -7845,29 +7965,60 @@
           if (inp1) AppState.diff_p1 = Math.max(5.0, curP1 || 80.0);
           if (inp2) AppState.diff_p2 = Math.max(5.0, curP2 || 120.0);
         }
+
+        if (AppState.diffAutoConstrain) {
+          syncDifferentPitchConstrained('p1');
+        }
       }
       onParamChange();
       updateDifferentPitchFactorsUI();
     }
 
-    function onDifferentPitchParamChange() {
+    function onDifferentPitchParamChange(source) {
       const inp1 = document.getElementById('input_diff_p1');
       const inp2 = document.getElementById('input_diff_p2');
-      if (inp1) AppState.diff_p1 = Math.max(5.0, parseFloat(inp1.value) || 80.0);
-      if (inp2) AppState.diff_p2 = Math.max(5.0, parseFloat(inp2.value) || 120.0);
+      if (source === 'p2') {
+        if (inp2) AppState.diff_p2 = Math.max(5.0, parseFloat(inp2.value) || 120.0);
+      } else {
+        if (inp1) AppState.diff_p1 = Math.max(5.0, parseFloat(inp1.value) || 80.0);
+      }
+
+      if (AppState.diffAutoConstrain) {
+        if (source === 'p2') {
+          syncDifferentPitchConstrained('p2');
+        } else {
+          syncDifferentPitchConstrained('p1');
+        }
+      } else {
+        // Tùy chỉnh tự do: người dùng có thể đặt p1, p2 tùy ý
+        AppState.p = Math.round(((AppState.diff_p1 || 80.0) + (AppState.diff_p2 || 120.0)) / 2.0);
+        const numP = document.getElementById('num_p');
+        if (numP) numP.value = AppState.p;
+        const inpP = document.getElementById('input_p');
+        if (inpP) inpP.value = AppState.p;
+      }
       onParamChange();
       updateDifferentPitchFactorsUI();
     }
 
     function loadKettenwulfP50Preset() {
       const chk = document.getElementById('chkDifferentPitch');
-      if (chk) {
-        chk.checked = true;
-        onDifferentPitchToggle();
-      }
+      if (chk) chk.checked = true;
       AppState.isDifferentPitch = true;
+      const panel = document.getElementById('panelDifferentPitch');
+      if (panel) panel.style.display = 'block';
+
+      AppState.diffAutoConstrain = true;
+      const chkConstrain = document.getElementById('chkDiffAutoConstrain');
+      if (chkConstrain) chkConstrain.checked = true;
+      const desc = document.getElementById('descDiffAutoConstrain');
+      if (desc) {
+        desc.innerHTML = '<span style="color: #38bdf8; font-weight: 600;">🔒 Đang khóa khuôn khổ:</span> Tự động đồng bộ p₂ = 1.5·p₁, p₁ ≥ 2.2·d₁, đỉnh răng luôn giữ chuẩn độ bền, không bị nhọn/móng vuốt.';
+      }
+
       AppState.diff_p1 = 80.0;
       AppState.diff_p2 = 120.0;
+      AppState.p = 100.0;
       AppState.z = 6;
       AppState.d1 = 25.0;
       AppState.b1 = 25.0;
@@ -7878,6 +8029,10 @@
       if (inp1) inp1.value = 80;
       const inp2 = document.getElementById('input_diff_p2');
       if (inp2) inp2.value = 120;
+      const numP = document.getElementById('num_p');
+      if (numP) numP.value = 100;
+      const inpP = document.getElementById('input_p');
+      if (inpP) inpP.value = 100;
       const numZ = document.getElementById('num_z');
       if (numZ) numZ.value = 6;
       const inpZ = document.getElementById('input_z');
@@ -7888,8 +8043,13 @@
       if (inpD1) inpD1.value = 25;
       const inpB1 = document.getElementById('input_b1');
       if (inpB1) inpB1.value = 25;
+      const inpG = document.getElementById('input_g');
+      if (inpG) inpG.value = 35;
+      const inpR4 = document.getElementById('input_r4');
+      if (inpR4) inpR4.value = 3;
 
-      onDifferentPitchParamChange();
+      onParamChange();
+      updateDifferentPitchFactorsUI();
     }
 
     function updateDifferentPitchFactorsUI() {
@@ -7916,37 +8076,83 @@
       const s_k2 = Ra * delta_th2;
       const ratio = p2 / p1;
 
+      // Huy hiệu trạng thái khóa
+      let statusBadge = '';
+      if (AppState.diffAutoConstrain) {
+        statusBadge = `<div style="display:inline-block; padding: 2px 6px; border-radius: 4px; font-weight:700; font-size:9.5px; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); margin-bottom: 4px;">
+          🔒 KHUÔN KHỔ CHUẨN KETTENWULF (AUTO-CONSTRAINED)
+        </div>`;
+      } else {
+        statusBadge = `<div style="display:inline-block; padding: 2px 6px; border-radius: 4px; font-weight:700; font-size:9.5px; background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); margin-bottom: 4px;">
+          🔓 TÙY CHỈNH TỰ DO (CUSTOM MODE)
+        </div>`;
+      }
+
       let validHtml = '';
+
+      // 1. Cảnh báo nếu chọn nhầm xích con lăn truyền lực tốc độ cao (DIN 8187 / ANSI)
+      if (AppState.standard === 'KWN_001') {
+        validHtml += `<div style="color: #ef4444; font-weight: 700; margin-top: 4px; background: rgba(239, 68, 68, 0.15); padding: 5px 8px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.4); line-height: 1.4;">
+          ⛔ CẢNH BÁO: KHÔNG ÁP DỤNG CHO XÍCH TRUYỀN ĐỘNG CON LĂN CAO TỐC (DIN 8187 / ANSI)!<br>
+          <span style="font-weight: 400; font-size: 9.5px; color: #fca5a5;">
+            Xích con lăn truyền lực cao tốc (n ≥ 300 rpm) tuyệt đối không được dùng bước thay đổi. Hiệu ứng đa giác không đều sẽ gây va đập xung lực làm đứt xích và phá vỡ hộp số. Đĩa bước thay đổi CHỈ dành cho xích tải nặng cào/gàu/băng tải (ISO 1977, DIN 8167, DIN 8165, MT, FV, M) chạy tốc độ thấp (v ≤ 0.5 ÷ 1.0 m/s).
+          </span>
+        </div>`;
+      }
+
+      // 2. Cảnh báo đỉnh răng bước nhỏ
       if (delta_th1 <= 0.001 || s_k1 <= 0) {
         validHtml += `<div style="color: #ef4444; font-weight: 700; margin-top: 4px; background: rgba(239, 68, 68, 0.15); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.4); line-height: 1.35;">
           ❌ CẢNH BÁO: ĐỈNH RĂNG BƯỚC NHỎ BỊ NHỌN / MÓNG VUỐT!<br>
-          <span style="font-weight: 400; font-size: 9px; color: #fca5a5;">Bước p₁=${p1}mm quá nhỏ so với con lăn d₁=${d1}mm (θ₁ = ${(theta1*180/Math.PI).toFixed(1)}° &lt; 2·ξ_tip = ${(2*tip_ang*180/Math.PI).toFixed(1)}°). Cần tăng p₁ ≥ ${Math.round(2.2 * d1)}mm hoặc giảm số răng z!</span>
+          <span style="font-weight: 400; font-size: 9px; color: #fca5a5;">Bước p₁=${p1}mm quá nhỏ so với con lăn d₁=${d1}mm (θ₁ = ${(theta1*180/Math.PI).toFixed(1)}° &lt; 2·ξ_tip = ${(2*tip_ang*180/Math.PI).toFixed(1)}°). Đỉnh răng bị cắt nhọn dưới Ra, gây kẹt con lăn khi ra khớp. Cần tăng p₁ ≥ ${Math.round(2.2 * d1)}mm hoặc giảm số răng z!</span>
         </div>`;
       } else if (s_k1 < d1 * 0.10) {
-        validHtml += `<div style="color: #f59e0b; font-weight: 600; margin-top: 3px;">
-          ⚠️ CHÚ Ý: Đỉnh răng p₁ rất mỏng (s_k1 = ${s_k1.toFixed(1)} mm &lt; 0.1·d₁), nguy cơ sứt mẻ/mòn nhanh.
+        validHtml += `<div style="color: #f59e0b; font-weight: 600; margin-top: 3px; font-size: 9.5px;">
+          ⚠️ CHÚ Ý: Đỉnh răng p₁ rất mỏng (s_k1 = ${s_k1.toFixed(1)} mm &lt; 0.1·d₁), nguy cơ sứt mẻ/mòn nhanh khi chịu tải.
         </div>`;
       } else {
-        validHtml += `<div style="color: #10b981; font-weight: 600; margin-top: 3px;">
+        validHtml += `<div style="color: #10b981; font-weight: 600; margin-top: 3px; font-size: 9.5px;">
           ✓ Đỉnh răng p₁ rộng <strong>${s_k1.toFixed(1)} mm</strong> (${(delta_th1*180/Math.PI).toFixed(1)}°) | Đỉnh răng p₂ rộng <strong>${s_k2.toFixed(1)} mm</strong> (${(delta_th2*180/Math.PI).toFixed(1)}°)
         </div>`;
       }
 
-      if (ratio > 1.85) {
-        validHtml += `<div style="color: #f59e0b; font-size: 9px; margin-top: 2px;">
-          ⚠️ Tỷ lệ bước p₂/p₁ = ${ratio.toFixed(2)} quá lệch (&gt; 1.85), xích sẽ bị rung giật đa giác không đều. Khuyến nghị p₂/p₁ ≤ 1.6.
+      // 3. Cảnh báo tỷ lệ bước
+      if (p2 <= p1) {
+        validHtml += `<div style="color: #ef4444; font-size: 9.5px; margin-top: 2px;">
+          ❌ Bước lớn p₂ (${p2}mm) phải lớn hơn bước nhỏ p₁ (${p1}mm)!
         </div>`;
-      } else if (ratio < 1.05) {
-        validHtml += `<div style="color: #94a3b8; font-size: 9px; margin-top: 2px;">
+      } else if (ratio > 1.85) {
+        validHtml += `<div style="color: #f59e0b; font-size: 9.5px; margin-top: 2px;">
+          ⚠️ Tỷ lệ bước p₂/p₁ = ${ratio.toFixed(2)} quá lệch (&gt; 1.85), xích sẽ bị rung giật đa giác không đều. Khuyến nghị p₂/p₁ ≤ 1.6 (chuẩn KettenWulf: 1.50).
+        </div>`;
+      } else if (ratio < 1.15) {
+        validHtml += `<div style="color: #94a3b8; font-size: 9.5px; margin-top: 2px;">
           ℹ️ p₁ ≈ p₂ (tỷ lệ ${ratio.toFixed(2)}): Bước xích gần bằng nhau.
         </div>`;
       } else {
-        validHtml += `<div style="color: #38bdf8; font-size: 9px; margin-top: 2px;">
-          ✓ Tỷ lệ bước p₂/p₁ = ${ratio.toFixed(2)} (Chuẩn KettenWulf: 1.25 ÷ 1.6).
+        validHtml += `<div style="color: #38bdf8; font-size: 9.5px; margin-top: 2px;">
+          ✓ Tỷ lệ bước p₂/p₁ = ${ratio.toFixed(2)} (Chuẩn KettenWulf tối ưu: 1.25 ÷ 1.60).
         </div>`;
       }
 
+      // 4. Cảnh báo số răng
+      if (z_val > 14) {
+        validHtml += `<div style="color: #f59e0b; font-size: 9.5px; margin-top: 2px;">
+          ⚠️ Số răng z = ${z_val} quá lớn (&gt; 14): Đĩa bước thay đổi chỉ nên dùng z = 4 ÷ 12 răng để góc bước θ₁ đủ rộng.
+        </div>`;
+      } else if (z_val < 4) {
+        validHtml += `<div style="color: #ef4444; font-size: 9.5px; margin-top: 2px;">
+          ❌ Số răng z = ${z_val} quá ít (&lt; 4 răng).
+        </div>`;
+      }
+
+      // 5. Lưu ý quy tắc mắt xích chẵn
+      validHtml += `<div style="color: #94a3b8; font-size: 9px; margin-top: 3px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 3px;">
+        ℹ️ <em>Quy tắc mắt xích:</em> 1 răng đĩa ăn khớp với 1 cặp bước (p₁+p₂). Tổng số mắt xích trong chuỗi vòng kín <strong>BẮT BUỘC là số chẵn (N = 2K mắt)</strong>.
+      </div>`;
+
       div.innerHTML = `
+        ${statusBadge}<br>
         <strong>KettenWulf P50 (z = ${z_val} răng):</strong> n = <code style="color:#38bdf8;">${n_factor.toFixed(5)}</code> | f = <code style="color:#38bdf8;">${f_factor.toFixed(5)}</code><br>
         <span style="color:#fbbf24;">d₀ = n · √((p₁ + p₂)² - f · p₁ · p₂) = <strong>${d0.toFixed(2)} mm</strong></span>
         ${validHtml}
