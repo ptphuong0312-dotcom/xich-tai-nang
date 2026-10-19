@@ -15,8 +15,13 @@ backup/
 
 # App Icons & Assets
 !favicon.svg
-!apple-touch-icon.png
-!apple-touch-icon.svg
+!favicon.ico
+!favicon*.png
+!apple-touch-icon*.png
+!apple-touch-icon*.svg
+!icon-*.png
+!manifest.json
+!site.webmanifest
 !assets/
 !assets/**
 
